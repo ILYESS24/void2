@@ -6,15 +6,23 @@ npm install --legacy-peer-deps --ignore-scripts
 
 echo ""
 echo "✅ Installation explicite de gulp..."
-# Installer gulp globalement et localement pour être sûr
+# Installer gulp-cli globalement pour avoir la commande gulp
 npm install -g gulp-cli 2>/dev/null || true
-npm install gulp --legacy-peer-deps --ignore-scripts --save-dev --force
+
+# Installer le package gulp localement (nécessaire pour que gulp CLI fonctionne)
+npm install gulp@4.0.0 --legacy-peer-deps --ignore-scripts --save-dev --force
+
+# Vérifier que gulp est bien installé
+if [ ! -d "node_modules/gulp" ]; then
+    echo "⚠️ Gulp package non trouvé, réinstallation..."
+    npm install gulp@4.0.0 --legacy-peer-deps --ignore-scripts --save-dev
+fi
 
 echo ""
 echo "🔍 Vérification de gulp..."
-which gulp || echo "Gulp CLI non trouvé globalement"
-ls -la node_modules/.bin/gulp* 2>/dev/null || echo "Gulp bin non trouvé"
-ls -la node_modules/gulp*/bin/gulp.js 2>/dev/null || echo "Gulp.js non trouvé"
+echo "Gulp CLI: $(which gulp || echo 'non trouvé')"
+echo "Gulp local: $(ls -d node_modules/gulp 2>/dev/null || echo 'non trouvé')"
+ls -la node_modules/gulp/package.json 2>/dev/null || echo "⚠️ Gulp package.json non trouvé"
 
 echo ""
 echo "🚀 Compilation web..."
