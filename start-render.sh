@@ -102,6 +102,18 @@ else
     echo "✅ rimraf déjà présent"
 fi
 
+echo "Vérification de event-stream..."
+if ! node -e "require.resolve('event-stream')" 2>/dev/null; then
+    echo "⚠️ event-stream manquant, installation..."
+    npm install event-stream@3.3.4 --legacy-peer-deps --no-save --force --ignore-scripts || {
+        echo "⚠️ Installation avec erreurs, mais on continue..."
+    }
+    # Attendre un peu pour que npm termine
+    sleep 2
+else
+    echo "✅ event-stream déjà présent"
+fi
+
 # Vérification finale avec require.resolve (plus fiable que vérifier le dossier)
 echo ""
 echo "✅ Vérification finale des dépendances critiques:"
@@ -115,6 +127,12 @@ if node -e "require.resolve('rimraf')" 2>/dev/null; then
     echo "  ✓ rimraf (résolu: $(node -e "console.log(require.resolve('rimraf'))"))"
 else
     echo "  ✗ rimraf MANQUANT (ne peut pas être résolu)"
+fi
+
+if node -e "require.resolve('event-stream')" 2>/dev/null; then
+    echo "  ✓ event-stream (résolu: $(node -e "console.log(require.resolve('event-stream'))"))"
+else
+    echo "  ✗ event-stream MANQUANT (ne peut pas être résolu)"
 fi
 
 # Démarrer le serveur

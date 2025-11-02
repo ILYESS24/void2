@@ -19,8 +19,8 @@ npm install -g gulp-cli 2>/dev/null || true
 
 # Installer toutes les dépendances critiques en une seule commande
 # On utilise --no-save pour ne pas modifier package.json mais les installer dans node_modules
-echo "Installation de gulp, typescript, @vscode/test-web, rimraf..."
-npm install gulp@4.0.0 typescript @vscode/test-web rimraf --legacy-peer-deps --no-save --force
+echo "Installation de gulp, typescript, @vscode/test-web, rimraf, event-stream..."
+npm install gulp@4.0.0 typescript @vscode/test-web rimraf event-stream --legacy-peer-deps --no-save --force
 
 # Vérifier et réinstaller individuellement si nécessaire avec affichage explicite
 echo ""
