@@ -1,25 +1,18 @@
 #!/bin/bash
 set -e
 
-echo "📦 Installation des dépendances npm (sans scripts natifs)..."
-npm install --legacy-peer-deps --ignore-scripts
+echo "📦 Installation de gulp en premier (avant --ignore-scripts)..."
+# Installer gulp AVANT npm install --ignore-scripts pour éviter les problèmes
+npm install -g gulp-cli 2>/dev/null || true
+npm install gulp@4.0.0 --legacy-peer-deps --save-dev
 
 echo ""
-echo "✅ Installation explicite de gulp..."
-# Installer gulp-cli globalement pour avoir la commande gulp
-npm install -g gulp-cli 2>/dev/null || true
+echo "📦 Installation des autres dépendances npm (sans scripts natifs)..."
+npm install --legacy-peer-deps --ignore-scripts
 
-# Installer le package gulp localement SANS --ignore-scripts (gulp n'a pas de scripts natifs problématiques)
-echo "Installation du package gulp..."
-# Forcer l'installation en supprimant d'abord s'il existe
-rm -rf node_modules/gulp node_modules/.bin/gulp 2>/dev/null || true
-# Installer gulp
-npm install gulp@4.0.0 --legacy-peer-deps --save-dev --no-save=false
-
-# Vérifier que gulp est bien installé
+# Vérifier que gulp est toujours là après npm install
 if [ ! -d "node_modules/gulp" ]; then
-    echo "⚠️ Gulp package non trouvé après installation, essai avec npm cache clean..."
-    npm cache clean --force
+    echo "⚠️ Gulp perdu après npm install, réinstallation..."
     npm install gulp@4.0.0 --legacy-peer-deps --save-dev --force
 fi
 
