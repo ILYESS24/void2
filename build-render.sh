@@ -9,20 +9,34 @@ echo "✅ Installation explicite de gulp..."
 # Installer gulp-cli globalement pour avoir la commande gulp
 npm install -g gulp-cli 2>/dev/null || true
 
-# Installer le package gulp localement (nécessaire pour que gulp CLI fonctionne)
-npm install gulp@4.0.0 --legacy-peer-deps --ignore-scripts --save-dev --force
+# Installer le package gulp localement SANS --ignore-scripts (gulp n'a pas de scripts natifs problématiques)
+echo "Installation du package gulp..."
+npm install gulp@4.0.0 --legacy-peer-deps --save-dev
 
 # Vérifier que gulp est bien installé
 if [ ! -d "node_modules/gulp" ]; then
-    echo "⚠️ Gulp package non trouvé, réinstallation..."
-    npm install gulp@4.0.0 --legacy-peer-deps --ignore-scripts --save-dev
+    echo "⚠️ Gulp package non trouvé après installation, essai sans version..."
+    npm install gulp --legacy-peer-deps --save-dev
+fi
+
+# Forcer la création du lien .bin si nécessaire
+if [ ! -f "node_modules/.bin/gulp" ] && [ -d "node_modules/gulp" ]; then
+    echo "Création du lien .bin pour gulp..."
+    mkdir -p node_modules/.bin
+    ln -s ../gulp/bin/gulp.js node_modules/.bin/gulp 2>/dev/null || true
 fi
 
 echo ""
 echo "🔍 Vérification de gulp..."
 echo "Gulp CLI: $(which gulp || echo 'non trouvé')"
-echo "Gulp local: $(ls -d node_modules/gulp 2>/dev/null || echo 'non trouvé')"
-ls -la node_modules/gulp/package.json 2>/dev/null || echo "⚠️ Gulp package.json non trouvé"
+if [ -d "node_modules/gulp" ]; then
+    echo "✅ Gulp local: node_modules/gulp trouvé"
+    ls -la node_modules/gulp/package.json
+else
+    echo "❌ Gulp local: non trouvé"
+    echo "Contenu de node_modules (premiers fichiers):"
+    ls node_modules/ | head -10
+fi
 
 echo ""
 echo "🚀 Compilation web..."
