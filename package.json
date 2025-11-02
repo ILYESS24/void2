@@ -139,7 +139,8 @@
     "yauzl": "^3.0.0",
     "yazl": "^2.4.3",
     "@vscode/test-web": "^0.0.62",
-    "rimraf": "^2.2.8"
+    "rimraf": "^2.2.8",
+    "event-stream": "3.3.4"
   },
   "devDependencies": {
     "@playwright/test": "^1.50.0",
