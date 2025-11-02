@@ -46,25 +46,39 @@ try {
 	console.log('⚠️ @vscode/test-web non résolu, tentative d\'installation...');
 	ensureDependency('@vscode/test-web');
 	
-	// Attendre un peu et réessayer
-	setTimeout(() => {
+	// Attendre un peu pour que npm termine (utiliser une boucle de retry)
+	let resolved = false;
+	for (let i = 0; i < 5; i++) {
 		try {
 			testWebLocation = require.resolve('@vscode/test-web');
 			console.log(`✅ @vscode/test-web trouvé après installation: ${testWebLocation}`);
+			resolved = true;
+			break;
 		} catch (err) {
-			console.error('❌ Impossible de résoudre @vscode/test-web après installation:', err.message);
-			console.error('💡 Vérification du contenu de node_modules/@vscode...');
-			const fs = require('fs');
-			try {
-				const vscodeDir = `${APP_ROOT}/node_modules/@vscode`;
-				if (fs.existsSync(vscodeDir)) {
-					const files = fs.readdirSync(vscodeDir);
-					console.error(`   Contenu de node_modules/@vscode: ${files.join(', ')}`);
-				}
-			} catch {}
-			process.exit(1);
+			if (i < 4) {
+				console.log(`⏳ Tentative ${i + 1}/5, attente...`);
+				execSync('sleep 1', { stdio: 'ignore' });
+			}
 		}
-	}, 2000);
+	}
+	
+	if (!resolved) {
+		console.error('❌ Impossible de résoudre @vscode/test-web après installation');
+		console.error('💡 Vérification du contenu de node_modules/@vscode...');
+		try {
+			const vscodeDir = `${APP_ROOT}/node_modules/@vscode`;
+			if (existsSync(vscodeDir)) {
+				const fs = require('fs');
+				const files = fs.readdirSync(vscodeDir);
+				console.error(`   Contenu de node_modules/@vscode: ${files.join(', ')}`);
+			} else {
+				console.error(`   node_modules/@vscode n'existe pas`);
+			}
+		} catch (e) {
+			console.error(`   Erreur lors de la vérification: ${e.message}`);
+		}
+		process.exit(1);
+	}
 }
 
 // Render utilise le port depuis la variable d'environnement PORT
