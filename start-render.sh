@@ -5,14 +5,19 @@ echo "🚀 Démarrage du serveur Render..."
 echo "📦 Installation des dépendances critiques au runtime..."
 
 # Installer les dépendances critiques si elles ne sont pas présentes
+# Utiliser --ignore-scripts pour éviter la compilation des modules natifs
 if [ ! -d "node_modules/@vscode/test-web" ]; then
     echo "⚠️ @vscode/test-web manquant, installation..."
-    npm install @vscode/test-web --legacy-peer-deps --no-save --force
+    npm install @vscode/test-web --legacy-peer-deps --no-save --force --ignore-scripts || {
+        echo "⚠️ Installation avec erreurs, mais on continue..."
+    }
 fi
 
 if [ ! -d "node_modules/rimraf" ]; then
     echo "⚠️ rimraf manquant, installation..."
-    npm install rimraf --legacy-peer-deps --no-save --force
+    npm install rimraf --legacy-peer-deps --no-save --force --ignore-scripts || {
+        echo "⚠️ Installation avec erreurs, mais on continue..."
+    }
 fi
 
 # Vérification finale
