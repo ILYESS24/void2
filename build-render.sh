@@ -2,10 +2,10 @@
 # Ne pas arrêter sur erreur - on veut continuer même si des modules natifs échouent
 set +e
 
-echo "📦 Installation de gulp et outils de build d'abord..."
-# Installer gulp AVANT npm install --ignore-scripts pour éviter les problèmes
+echo "📦 Installation de gulp, typescript et @vscode/test-web d'abord..."
+# Installer les dépendances critiques AVANT npm install --ignore-scripts
 npm install -g gulp-cli 2>/dev/null || true
-npm install gulp@4.0.0 typescript --legacy-peer-deps --save-dev
+npm install gulp@4.0.0 typescript @vscode/test-web rimraf --legacy-peer-deps --save-dev
 
 echo ""
 echo "📦 Installation des autres dépendances npm (avec --ignore-scripts pour éviter modules natifs)..."
