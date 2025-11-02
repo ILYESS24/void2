@@ -18,10 +18,26 @@ if [ ! -d "node_modules/gulp" ] || [ ! -f "node_modules/typescript/lib/typescrip
     npm install --legacy-peer-deps --ignore-scripts --force 2>&1 | grep -v "native-keymap\|native-watchdog\|node-pty" || true
 fi
 
-# Vérifier que gulp est toujours là après npm install
+# Vérifier et réinstaller les dépendances critiques si manquantes après npm install
+echo "🔍 Vérification des dépendances critiques..."
 if [ ! -d "node_modules/gulp" ]; then
     echo "⚠️ Gulp perdu après npm install, réinstallation..."
     npm install gulp@4.0.0 --legacy-peer-deps --save-dev --force
+fi
+
+if [ ! -d "node_modules/@vscode/test-web" ]; then
+    echo "⚠️ @vscode/test-web perdu après npm install, réinstallation..."
+    npm install @vscode/test-web --legacy-peer-deps --save-dev --force
+fi
+
+if [ ! -d "node_modules/rimraf" ]; then
+    echo "⚠️ rimraf perdu après npm install, réinstallation..."
+    npm install rimraf --legacy-peer-deps --save-dev --force
+fi
+
+if [ ! -d "node_modules/typescript" ]; then
+    echo "⚠️ typescript perdu après npm install, réinstallation..."
+    npm install typescript --legacy-peer-deps --save-dev --force
 fi
 
 # Nettoyer les modules natifs qui ont échoué (optionnel, pour éviter les erreurs plus tard)
