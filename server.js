@@ -36,16 +36,35 @@ function ensureDependency(packageName) {
 
 // Vérifier et installer les dépendances critiques au démarrage
 console.log('🔍 Vérification des dépendances critiques...');
-ensureDependency('@vscode/test-web');
 
-// Maintenant on peut résoudre le module
+// Essayer de résoudre d'abord, installer seulement si nécessaire
 let testWebLocation;
 try {
 	testWebLocation = require.resolve('@vscode/test-web');
-	console.log(`✅ @vscode/test-web trouvé: ${testWebLocation}`);
+	console.log(`✅ @vscode/test-web déjà présent: ${testWebLocation}`);
 } catch (error) {
-	console.error('❌ Impossible de résoudre @vscode/test-web:', error.message);
-	process.exit(1);
+	console.log('⚠️ @vscode/test-web non résolu, tentative d\'installation...');
+	ensureDependency('@vscode/test-web');
+	
+	// Attendre un peu et réessayer
+	setTimeout(() => {
+		try {
+			testWebLocation = require.resolve('@vscode/test-web');
+			console.log(`✅ @vscode/test-web trouvé après installation: ${testWebLocation}`);
+		} catch (err) {
+			console.error('❌ Impossible de résoudre @vscode/test-web après installation:', err.message);
+			console.error('💡 Vérification du contenu de node_modules/@vscode...');
+			const fs = require('fs');
+			try {
+				const vscodeDir = `${APP_ROOT}/node_modules/@vscode`;
+				if (fs.existsSync(vscodeDir)) {
+					const files = fs.readdirSync(vscodeDir);
+					console.error(`   Contenu de node_modules/@vscode: ${files.join(', ')}`);
+				}
+			} catch {}
+			process.exit(1);
+		}
+	}, 2000);
 }
 
 // Render utilise le port depuis la variable d'environnement PORT
