@@ -23,7 +23,7 @@ if ! node -e "require.resolve('@vscode/test-web')" 2>/dev/null; then
         # Si ça échoue, essayer avec npm ci pour forcer
         npm install @vscode/test-web@latest --legacy-peer-deps --force --ignore-scripts 2>&1 | tail -10 || true
     }
-    
+
     # Vérifier si installé après
     echo "   🔍 Vérification post-installation..."
     if [ -d "node_modules/@vscode/test-web" ]; then
@@ -39,10 +39,30 @@ if ! node -e "require.resolve('@vscode/test-web')" 2>/dev/null; then
         echo "   🔄 Essai d'installation MANUELLE dans node_modules/@vscode/test-web..."
         mkdir -p node_modules/@vscode/test-web
         cd node_modules/@vscode/test-web
-        npm pack @vscode/test-web 2>/dev/null && tar -xzf *.tgz --strip-components=1 2>/dev/null && rm -f *.tgz || true
+        PACK_FILE=$(npm pack @vscode/test-web 2>&1 | tail -1)
+        if [ -f "$PACK_FILE" ]; then
+            echo "   ✓ Fichier pack téléchargé: $PACK_FILE"
+            tar -xzf "$PACK_FILE" --strip-components=1
+            rm -f "$PACK_FILE"
+            echo "   ✓ Extraction terminée"
+            ls -la | head -10
+        else
+            echo "   ✗ Échec du téléchargement du pack"
+        fi
         cd - > /dev/null
     fi
 
+    # Vérifier après extraction manuelle
+    if [ -d "node_modules/@vscode/test-web" ] && [ -f "node_modules/@vscode/test-web/package.json" ]; then
+        echo "   ✅ Installation manuelle réussie!"
+        # Vérifier avec require.resolve
+        if node -e "require.resolve('@vscode/test-web')" 2>/dev/null; then
+            echo "   ✅ Package résolu correctement"
+        else
+            echo "   ⚠️ Package installé mais ne peut pas être résolu"
+        fi
+    fi
+    
     # Attendre un peu pour que npm termine
     sleep 3
 else
