@@ -16,14 +16,14 @@ const APP_ROOT = __dirname;
 // Fonction pour installer une dépendance si elle est manquante
 function ensureDependency(packageName) {
 	const nodeModulesPath = `${APP_ROOT}/node_modules/${packageName}`;
-	
+
 	// Vérifier d'abord avec require.resolve (plus fiable)
 	let canResolve = false;
 	try {
 		require.resolve(packageName);
 		canResolve = true;
-	} catch {}
-	
+	} catch { }
+
 	if (!canResolve && !existsSync(nodeModulesPath)) {
 		console.log(`⚠️ ${packageName} manquant, installation...`);
 		try {
@@ -34,7 +34,7 @@ function ensureDependency(packageName) {
 				cwd: APP_ROOT,
 				env: { ...process.env }
 			});
-			
+
 			// Vérifier après installation
 			if (existsSync(nodeModulesPath)) {
 				console.log(`✅ ${packageName} installé avec succès (dossier trouvé)`);
@@ -94,18 +94,50 @@ try {
 		console.error('❌ Impossible de résoudre @vscode/test-web après installation');
 		console.error('💡 Vérification du contenu de node_modules/@vscode...');
 		try {
+			const fs = require('fs');
 			const vscodeDir = `${APP_ROOT}/node_modules/@vscode`;
 			if (existsSync(vscodeDir)) {
-				const fs = require('fs');
 				const files = fs.readdirSync(vscodeDir);
 				console.error(`   Contenu de node_modules/@vscode: ${files.join(', ')}`);
 			} else {
 				console.error(`   node_modules/@vscode n'existe pas`);
 			}
+			
+			// Essayer d'installer manuellement avec extraction directe
+			console.error('🔄 Tentative d\'installation manuelle finale...');
+			const testWebDir = `${APP_ROOT}/node_modules/@vscode/test-web`;
+			if (!existsSync(testWebDir)) {
+				fs.mkdirSync(testWebDir, { recursive: true });
+			}
+			
+			// Utiliser une commande shell pour extraire le package
+			const { execSync } = require('child_process');
+			try {
+				process.chdir(testWebDir);
+				const packOutput = execSync('npm pack @vscode/test-web', { encoding: 'utf8', stdio: 'pipe' });
+				const packFile = packOutput.trim().split('\n').pop();
+				if (packFile && packFile.endsWith('.tgz')) {
+					execSync(`tar -xzf ${packFile} --strip-components=1`, { stdio: 'inherit' });
+					fs.unlinkSync(packFile);
+					console.error(`   ✅ Package extrait manuellement`);
+					
+					// Réessayer la résolution
+					testWebLocation = require.resolve('@vscode/test-web');
+					console.log(`✅ @vscode/test-web trouvé après extraction manuelle: ${testWebLocation}`);
+					resolved = true;
+				}
+			} catch (manualError) {
+				console.error(`   ❌ Échec de l'extraction manuelle: ${manualError.message}`);
+			} finally {
+				process.chdir(APP_ROOT);
+			}
 		} catch (e) {
 			console.error(`   Erreur lors de la vérification: ${e.message}`);
 		}
-		process.exit(1);
+		
+		if (!resolved) {
+			process.exit(1);
+		}
 	}
 }
 
