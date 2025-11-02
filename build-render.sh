@@ -1,5 +1,6 @@
 #!/bin/bash
-set -e
+# Ne pas arrêter sur erreur - on veut continuer même si des modules natifs échouent
+set +e
 
 echo "📦 Installation de gulp et outils de build d'abord..."
 # Installer gulp AVANT npm install --ignore-scripts pour éviter les problèmes
@@ -8,8 +9,14 @@ npm install gulp@4.0.0 typescript --legacy-peer-deps --save-dev
 
 echo ""
 echo "📦 Installation des autres dépendances npm (avec --ignore-scripts pour éviter modules natifs)..."
-# Installer avec --ignore-scripts et continuer même si certains packages échouent
-npm install --legacy-peer-deps --ignore-scripts || npm install --legacy-peer-deps --ignore-scripts --force || true
+# Installer avec --ignore-scripts - continuer même si certains packages échouent
+npm install --legacy-peer-deps --ignore-scripts 2>&1 | grep -v "native-keymap\|native-watchdog\|node-pty" || true
+
+# Réessayer si nécessaire
+if [ ! -d "node_modules/gulp" ] || [ ! -f "node_modules/typescript/lib/typescript.js" ]; then
+    echo "Réinstallation des dépendances critiques..."
+    npm install --legacy-peer-deps --ignore-scripts --force 2>&1 | grep -v "native-keymap\|native-watchdog\|node-pty" || true
+fi
 
 # Vérifier que gulp est toujours là après npm install
 if [ ! -d "node_modules/gulp" ]; then
