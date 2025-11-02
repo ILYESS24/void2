@@ -5,7 +5,7 @@ services:
     plan: free
     region: oregon
     buildCommand: chmod +x build-render.sh && ./build-render.sh
-      startCommand: chmod +x start-render.sh && ./start-render.sh
+    startCommand: chmod +x start-render.sh && ./start-render.sh
     healthCheckPath: /
     dockerfilePath: ""
     skipAutoDetect: true
