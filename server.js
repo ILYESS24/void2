@@ -16,21 +16,49 @@ const APP_ROOT = __dirname;
 // Fonction pour installer une dépendance si elle est manquante
 function ensureDependency(packageName) {
 	const nodeModulesPath = `${APP_ROOT}/node_modules/${packageName}`;
-	if (!existsSync(nodeModulesPath)) {
+	
+	// Vérifier d'abord avec require.resolve (plus fiable)
+	let canResolve = false;
+	try {
+		require.resolve(packageName);
+		canResolve = true;
+	} catch {}
+	
+	if (!canResolve && !existsSync(nodeModulesPath)) {
 		console.log(`⚠️ ${packageName} manquant, installation...`);
 		try {
 			// Utiliser --ignore-scripts pour éviter la compilation des modules natifs
+			console.log(`📦 Exécution: npm install ${packageName} --legacy-peer-deps --no-save --force --ignore-scripts`);
 			execSync(`npm install ${packageName} --legacy-peer-deps --no-save --force --ignore-scripts`, {
 				stdio: 'inherit',
 				cwd: APP_ROOT,
 				env: { ...process.env }
 			});
-			console.log(`✅ ${packageName} installé avec succès`);
+			
+			// Vérifier après installation
+			if (existsSync(nodeModulesPath)) {
+				console.log(`✅ ${packageName} installé avec succès (dossier trouvé)`);
+			} else {
+				console.log(`⚠️ ${packageName} : dossier non trouvé après installation`);
+				// Essayer de nettoyer le cache et réinstaller
+				console.log(`🔄 Nettoyage du cache npm et nouvelle tentative...`);
+				try {
+					execSync('npm cache clean --force', { stdio: 'ignore', cwd: APP_ROOT });
+					execSync(`npm install ${packageName} --legacy-peer-deps --no-save --force --ignore-scripts`, {
+						stdio: 'inherit',
+						cwd: APP_ROOT
+					});
+				} catch (retryError) {
+					console.error(`❌ Échec de la réinstallation: ${retryError.message}`);
+				}
+			}
 		} catch (error) {
 			console.error(`❌ Erreur lors de l'installation de ${packageName}:`, error.message);
 			// Ne pas arrêter immédiatement, essayer de continuer
 			console.log(`⚠️ Tentative de continuation malgré l'erreur...`);
 		}
+	} else if (canResolve) {
+		console.log(`✅ ${packageName} déjà disponible`);
 	}
 }
 
@@ -45,7 +73,7 @@ try {
 } catch (error) {
 	console.log('⚠️ @vscode/test-web non résolu, tentative d\'installation...');
 	ensureDependency('@vscode/test-web');
-	
+
 	// Attendre un peu pour que npm termine (utiliser une boucle de retry)
 	let resolved = false;
 	for (let i = 0; i < 5; i++) {
@@ -61,7 +89,7 @@ try {
 			}
 		}
 	}
-	
+
 	if (!resolved) {
 		console.error('❌ Impossible de résoudre @vscode/test-web après installation');
 		console.error('💡 Vérification du contenu de node_modules/@vscode...');

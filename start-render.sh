@@ -9,11 +9,39 @@ echo "📦 Installation des dépendances critiques au runtime..."
 echo "Vérification de @vscode/test-web..."
 if ! node -e "require.resolve('@vscode/test-web')" 2>/dev/null; then
     echo "⚠️ @vscode/test-web manquant, installation..."
-    npm install @vscode/test-web --legacy-peer-deps --no-save --force --ignore-scripts || {
+    
+    # Vérifier si le dossier existe avant installation
+    if [ -d "node_modules/@vscode/test-web" ]; then
+        echo "   📁 Dossier existe mais ne peut pas être résolu, nettoyage..."
+        rm -rf node_modules/@vscode/test-web
+    fi
+    
+    # Installer avec plus de verbosité
+    echo "   📦 Installation en cours..."
+    npm install @vscode/test-web --legacy-peer-deps --no-save --force --ignore-scripts 2>&1 | tail -20 || {
         echo "⚠️ Installation avec erreurs, mais on continue..."
     }
+    
+    # Vérifier si installé après
+    echo "   🔍 Vérification post-installation..."
+    if [ -d "node_modules/@vscode/test-web" ]; then
+        echo "   ✓ Dossier créé: node_modules/@vscode/test-web"
+        ls -la node_modules/@vscode/test-web/ | head -5
+    else
+        echo "   ✗ Dossier toujours absent après installation"
+        echo "   📋 Contenu de node_modules/@vscode:"
+        ls node_modules/@vscode/ 2>/dev/null || echo "      (vide ou n'existe pas)"
+    fi
+    
+    # Essayer de nettoyer le cache npm et réinstaller
+    if ! node -e "require.resolve('@vscode/test-web')" 2>/dev/null; then
+        echo "   🔄 Nettoyage du cache npm et nouvelle tentative..."
+        npm cache clean --force 2>/dev/null || true
+        npm install @vscode/test-web --legacy-peer-deps --no-save --force --ignore-scripts 2>&1 | tail -10 || true
+    fi
+    
     # Attendre un peu pour que npm termine
-    sleep 2
+    sleep 3
 else
     echo "✅ @vscode/test-web déjà présent"
 fi
