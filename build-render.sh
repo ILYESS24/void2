@@ -17,39 +17,55 @@ echo ""
 echo "🔧 Installation des dépendances critiques (gulp, typescript, @vscode/test-web, rimraf)..."
 npm install -g gulp-cli 2>/dev/null || true
 
-# Installer toutes les dépendances critiques en une seule commande, sans --ignore-scripts pour ces packages spécifiques
-npm install gulp@4.0.0 typescript @vscode/test-web rimraf --legacy-peer-deps --save-dev --no-save
+# Installer toutes les dépendances critiques en une seule commande
+# On utilise --no-save pour ne pas modifier package.json mais les installer dans node_modules
+echo "Installation de gulp, typescript, @vscode/test-web, rimraf..."
+npm install gulp@4.0.0 typescript @vscode/test-web rimraf --legacy-peer-deps --no-save --force
 
-# Vérifier et réinstaller individuellement si nécessaire
+# Vérifier et réinstaller individuellement si nécessaire avec affichage explicite
 echo ""
 echo "🔍 Vérification des dépendances critiques..."
 if [ ! -d "node_modules/gulp" ] || [ ! -f "node_modules/gulp/bin/gulp.js" ]; then
     echo "⚠️ Gulp manquant, réinstallation..."
-    npm install gulp@4.0.0 --legacy-peer-deps --save-dev --force
+    npm install gulp@4.0.0 --legacy-peer-deps --no-save --force
+else
+    echo "✅ Gulp trouvé"
 fi
 
 if [ ! -d "node_modules/@vscode/test-web" ]; then
     echo "⚠️ @vscode/test-web manquant, réinstallation..."
-    npm install @vscode/test-web --legacy-peer-deps --save-dev --force
+    npm install @vscode/test-web --legacy-peer-deps --no-save --force
+else
+    echo "✅ @vscode/test-web trouvé"
 fi
 
 if [ ! -d "node_modules/rimraf" ]; then
     echo "⚠️ rimraf manquant, réinstallation..."
-    npm install rimraf --legacy-peer-deps --save-dev --force
+    npm install rimraf --legacy-peer-deps --no-save --force
+else
+    echo "✅ rimraf trouvé"
 fi
 
 if [ ! -d "node_modules/typescript" ] || [ ! -f "node_modules/typescript/lib/typescript.js" ]; then
     echo "⚠️ typescript manquant, réinstallation..."
-    npm install typescript --legacy-peer-deps --save-dev --force
+    npm install typescript --legacy-peer-deps --no-save --force
+else
+    echo "✅ typescript trouvé"
 fi
 
-# Afficher la confirmation
+# Afficher la confirmation finale avec test de présence
 echo ""
 echo "✅ Vérification finale des dépendances critiques:"
-[ -d "node_modules/gulp" ] && echo "  ✓ gulp trouvé" || echo "  ✗ gulp MANQUANT"
-[ -d "node_modules/@vscode/test-web" ] && echo "  ✓ @vscode/test-web trouvé" || echo "  ✗ @vscode/test-web MANQUANT"
-[ -d "node_modules/rimraf" ] && echo "  ✓ rimraf trouvé" || echo "  ✗ rimraf MANQUANT"
-[ -d "node_modules/typescript" ] && echo "  ✓ typescript trouvé" || echo "  ✗ typescript MANQUANT"
+test -d "node_modules/gulp" && echo "  ✓ gulp trouvé" || echo "  ✗ gulp MANQUANT"
+test -d "node_modules/@vscode/test-web" && echo "  ✓ @vscode/test-web trouvé" || echo "  ✗ @vscode/test-web MANQUANT"
+test -d "node_modules/rimraf" && echo "  ✓ rimraf trouvé" || echo "  ✗ rimraf MANQUANT"
+test -d "node_modules/typescript" && echo "  ✓ typescript trouvé" || echo "  ✗ typescript MANQUANT"
+
+# Vérifier aussi avec require.resolve pour @vscode/test-web (test de runtime)
+echo ""
+echo "🧪 Test de résolution des modules..."
+node -e "try { require.resolve('@vscode/test-web'); console.log('✅ @vscode/test-web résolu correctement'); } catch(e) { console.log('✗ @vscode/test-web NON résolu:', e.message); process.exit(1); }" || echo "⚠️ @vscode/test-web ne peut pas être résolu"
+node -e "try { require.resolve('rimraf'); console.log('✅ rimraf résolu correctement'); } catch(e) { console.log('✗ rimraf NON résolu:', e.message); process.exit(1); }" || echo "⚠️ rimraf ne peut pas être résolu"
 
 # Nettoyer les modules natifs qui ont échoué (optionnel, pour éviter les erreurs plus tard)
 echo "🧹 Nettoyage des modules natifs problématiques..."
