@@ -2,17 +2,48 @@
  * Serveur Render pour Void
  *--------------------------------------------------------------------------------------------*/
 
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { existsSync } from 'fs';
 
 const require = createRequire(import.meta.url);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const APP_ROOT = __dirname;
 
-const testWebLocation = require.resolve('@vscode/test-web');
+// Fonction pour installer une dépendance si elle est manquante
+function ensureDependency(packageName) {
+	const nodeModulesPath = `${APP_ROOT}/node_modules/${packageName}`;
+	if (!existsSync(nodeModulesPath)) {
+		console.log(`⚠️ ${packageName} manquant, installation...`);
+		try {
+			execSync(`npm install ${packageName} --legacy-peer-deps --no-save --force`, {
+				stdio: 'inherit',
+				cwd: APP_ROOT
+			});
+			console.log(`✅ ${packageName} installé avec succès`);
+		} catch (error) {
+			console.error(`❌ Erreur lors de l'installation de ${packageName}:`, error.message);
+			process.exit(1);
+		}
+	}
+}
+
+// Vérifier et installer les dépendances critiques au démarrage
+console.log('🔍 Vérification des dépendances critiques...');
+ensureDependency('@vscode/test-web');
+
+// Maintenant on peut résoudre le module
+let testWebLocation;
+try {
+	testWebLocation = require.resolve('@vscode/test-web');
+	console.log(`✅ @vscode/test-web trouvé: ${testWebLocation}`);
+} catch (error) {
+	console.error('❌ Impossible de résoudre @vscode/test-web:', error.message);
+	process.exit(1);
+}
 
 // Render utilise le port depuis la variable d'environnement PORT
 const HOST = process.env.HOST || '0.0.0.0';
