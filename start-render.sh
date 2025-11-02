@@ -37,32 +37,53 @@ if ! node -e "require.resolve('@vscode/test-web')" 2>/dev/null; then
         echo "   📋 Contenu de node_modules/@vscode:"
         ls -la node_modules/@vscode/ 2>/dev/null | head -20 || echo "      (vide ou n'existe pas)"
         echo "   🔄 Essai d'installation MANUELLE dans node_modules/@vscode/test-web..."
-        mkdir -p node_modules/@vscode/test-web
-        cd node_modules/@vscode/test-web
-        PACK_FILE=$(npm pack @vscode/test-web 2>&1 | tail -1)
+        mkdir -p node_modules/@vscode/test-web || true
+        cd node_modules/@vscode/test-web || exit 1
+        PACK_FILE=$(npm pack @vscode/test-web 2>&1 | grep "\.tgz$" | tail -1)
         if [ -f "$PACK_FILE" ]; then
             echo "   ✓ Fichier pack téléchargé: $PACK_FILE"
-            tar -xzf "$PACK_FILE" --strip-components=1
+            echo "   📦 Extraction en cours..."
+            tar -xzf "$PACK_FILE" --strip-components=1 2>&1 | head -5 || {
+                echo "   ⚠️ Erreur lors de l'extraction tar"
+            }
             rm -f "$PACK_FILE"
-            echo "   ✓ Extraction terminée"
-            ls -la | head -10
+            if [ -f "package.json" ]; then
+                echo "   ✓ Extraction réussie - package.json trouvé"
+                echo "   📄 Contenu du package:"
+                ls -la | head -10
+            else
+                echo "   ✗ package.json introuvable après extraction"
+            fi
         else
-            echo "   ✗ Échec du téléchargement du pack"
+            echo "   ✗ Fichier pack non trouvé: $PACK_FILE"
+            echo "   📋 Liste des fichiers tgz:"
+            ls -la *.tgz 2>/dev/null || echo "      (aucun fichier tgz)"
         fi
-        cd - > /dev/null
+        cd "$OLDPWD" || cd - > /dev/null || true
     fi
 
-    # Vérifier après extraction manuelle
+    # Vérifier après extraction manuelle et forcer la résolution
     if [ -d "node_modules/@vscode/test-web" ] && [ -f "node_modules/@vscode/test-web/package.json" ]; then
         echo "   ✅ Installation manuelle réussie!"
+        # Forcer la reconstruction du cache de modules Node.js
+        echo "   🔄 Reconstruction du cache de résolution..."
+        # Créer un lien symbolique si nécessaire ou forcer le refresh
+        node -e "delete require.cache[require.resolve('module')]; console.log('Cache nettoyé')" 2>/dev/null || true
         # Vérifier avec require.resolve
         if node -e "require.resolve('@vscode/test-web')" 2>/dev/null; then
-            echo "   ✅ Package résolu correctement"
+            echo "   ✅ Package résolu correctement après extraction"
         else
-            echo "   ⚠️ Package installé mais ne peut pas être résolu"
+            echo "   ⚠️ Package installé mais ne peut pas être résolu - tentative de vérification directe..."
+            # Vérifier le chemin direct
+            if [ -f "node_modules/@vscode/test-web/dist/index.js" ] || [ -f "node_modules/@vscode/test-web/index.js" ]; then
+                echo "   ✓ Fichier principal trouvé, package devrait fonctionner"
+            else
+                echo "   ✗ Fichier principal non trouvé"
+                cat node_modules/@vscode/test-web/package.json | grep -E '"main"|"module"|"exports"' | head -3 || true
+            fi
         fi
     fi
-    
+
     # Attendre un peu pour que npm termine
     sleep 3
 else
