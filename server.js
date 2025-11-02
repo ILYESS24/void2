@@ -19,14 +19,17 @@ function ensureDependency(packageName) {
 	if (!existsSync(nodeModulesPath)) {
 		console.log(`⚠️ ${packageName} manquant, installation...`);
 		try {
-			execSync(`npm install ${packageName} --legacy-peer-deps --no-save --force`, {
+			// Utiliser --ignore-scripts pour éviter la compilation des modules natifs
+			execSync(`npm install ${packageName} --legacy-peer-deps --no-save --force --ignore-scripts`, {
 				stdio: 'inherit',
-				cwd: APP_ROOT
+				cwd: APP_ROOT,
+				env: { ...process.env }
 			});
 			console.log(`✅ ${packageName} installé avec succès`);
 		} catch (error) {
 			console.error(`❌ Erreur lors de l'installation de ${packageName}:`, error.message);
-			process.exit(1);
+			// Ne pas arrêter immédiatement, essayer de continuer
+			console.log(`⚠️ Tentative de continuation malgré l'erreur...`);
 		}
 	}
 }
