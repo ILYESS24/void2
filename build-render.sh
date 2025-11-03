@@ -20,7 +20,26 @@ npm install -g gulp-cli 2>/dev/null || true
 # Installer toutes les dépendances critiques en une seule commande
 # On utilise --no-save pour ne pas modifier package.json mais les installer dans node_modules
 echo "Installation de gulp, typescript, @vscode/test-web, rimraf, event-stream, gulp-rename, glob, vinyl-fs, fancy-log, ansi-colors..."
-npm install gulp@4.0.0 typescript @vscode/test-web rimraf event-stream gulp-rename@1.2.0 glob@5.0.13 vinyl-fs@2.4.4 fancy-log@1.3.3 ansi-colors@3.2.3 --legacy-peer-deps --no-save --force --ignore-scripts
+npm install gulp@4.0.0 typescript @vscode/test-web rimraf event-stream gulp-rename@1.2.0 glob@5.0.13 vinyl-fs@2.4.4 fancy-log@1.3.3 ansi-colors@3.2.3 --legacy-peer-deps --save-prod --force --ignore-scripts
+
+# Vérifier explicitement que gulp est installé
+echo ""
+echo "🔍 Vérification de l'installation de gulp..."
+if [ -d "node_modules/gulp" ] && [ -f "node_modules/gulp/package.json" ]; then
+    echo "✅ gulp installé dans node_modules/gulp"
+    echo "   📄 Version: $(cat node_modules/gulp/package.json | grep '"version"' | head -1 || echo 'inconnue')"
+    echo "   📄 Main: $(cat node_modules/gulp/package.json | grep '"main"' | head -1 || echo 'non spécifié')"
+    # Vérifier la résolution Node.js
+    if node -e "console.log(require.resolve('gulp'))" 2>/dev/null; then
+        echo "   ✅ gulp résolvable par Node.js"
+    else
+        echo "   ⚠️ gulp installé mais non résolvable par Node.js"
+        echo "   📋 Contenu du dossier gulp:"
+        ls -la node_modules/gulp/ | head -15
+    fi
+else
+    echo "❌ gulp NON installé dans node_modules/gulp"
+fi
 
 # Vérifier et réinstaller individuellement si nécessaire avec affichage explicite
 echo ""
