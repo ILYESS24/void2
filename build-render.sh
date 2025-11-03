@@ -574,6 +574,24 @@ if [ ! -d "node_modules/webpack" ]; then
     npm install webpack webpack-cli --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || echo "⚠️ Installation webpack échouée"
 fi
 
+# Vérifier que merge-options est installé (critique pour shared.webpack.config.js)
+echo "🔍 Vérification de merge-options (critique pour compilation web)..."
+if [ ! -d "node_modules/merge-options" ] || ! node -e "require.resolve('merge-options')" 2>/dev/null; then
+    echo "⚠️ merge-options non trouvé ou non résolvable, installation..."
+    npm install merge-options@^1.0.1 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || echo "⚠️ Installation merge-options échouée"
+    # Vérifier à nouveau après installation
+    if node -e "require.resolve('merge-options')" 2>/dev/null; then
+        echo "✅ merge-options résolu après installation"
+    else
+        echo "❌ ERREUR: merge-options toujours non résolvable après installation"
+        echo "   📋 Contenu de node_modules/merge-options:"
+        ls -la node_modules/merge-options/ 2>/dev/null || echo "      (dossier n'existe pas)"
+        echo "   🛑 Le build va échouer - merge-options est requis pour compile-web"
+    fi
+else
+    echo "✅ merge-options installé et résolvable"
+fi
+
 # Essayer plusieurs méthodes
 if command -v gulp >/dev/null 2>&1; then
     echo "Utilisation de gulp CLI global pour compile-web"
