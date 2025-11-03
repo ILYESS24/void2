@@ -17,10 +17,28 @@ echo ""
 echo "🔧 Installation des dépendances critiques (gulp, typescript, @vscode/test-web, rimraf)..."
 npm install -g gulp-cli 2>/dev/null || true
 
-# Installer toutes les dépendances critiques en une seule commande
-# On utilise --no-save pour ne pas modifier package.json mais les installer dans node_modules
-echo "Installation de gulp, typescript, @vscode/test-web, rimraf, event-stream, gulp-rename, gulp-filter, gulp-buffer, gulp-vinyl-zip, glob, vinyl, vinyl-fs, fancy-log, ansi-colors, through2, pump, debounce, ternary-stream, jsonc-parser..."
-npm install gulp@4.0.0 typescript @vscode/test-web rimraf event-stream gulp-rename@1.2.0 gulp-filter@5.1.0 gulp-buffer@0.0.2 gulp-vinyl-zip@2.0.3 glob@5.0.13 vinyl@2.2.1 vinyl-fs@2.4.4 fancy-log@1.3.3 ansi-colors@3.2.3 through2@4.0.2 pump@3.0.3 debounce@1.2.1 ternary-stream@3.0.0 jsonc-parser@3.2.0 --legacy-peer-deps --save-prod --force --ignore-scripts
+# Installer gulp EN PREMIER et vérifier qu'il est bien installé localement
+echo "📦 Installation de gulp localement (obligatoire pour gulp-cli)..."
+npm install gulp@4.0.0 --legacy-peer-deps --save-prod --force --ignore-scripts || {
+    echo "⚠️ Installation de gulp échouée, réessai..."
+    npm install gulp@4.0.0 --legacy-peer-deps --save-prod --force 2>&1 | tail -10
+}
+
+# Vérifier que gulp est bien installé localement
+if [ ! -d "node_modules/gulp" ]; then
+    echo "❌ ERREUR: gulp n'est toujours pas installé localement après tentative d'installation !"
+    echo "📋 Contenu de node_modules (recherche gulp):"
+    ls -la node_modules/ | grep -i gulp || echo "   (aucun dossier gulp trouvé)"
+    echo "🔄 Tentative de nettoyage et réinstallation..."
+    rm -rf node_modules/gulp node_modules/.bin/gulp
+    npm install gulp@4.0.0 --legacy-peer-deps --save-prod --force 2>&1 | tail -10
+else
+    echo "✅ gulp installé dans node_modules/gulp"
+fi
+
+# Installer toutes les autres dépendances critiques
+echo "Installation de typescript, @vscode/test-web, rimraf, event-stream, gulp-rename, gulp-filter, gulp-buffer, gulp-vinyl-zip, glob, vinyl, vinyl-fs, fancy-log, ansi-colors, through2, pump, debounce, ternary-stream, jsonc-parser..."
+npm install typescript @vscode/test-web rimraf event-stream gulp-rename@1.2.0 gulp-filter@5.1.0 gulp-buffer@0.0.2 gulp-vinyl-zip@2.0.3 glob@5.0.13 vinyl@2.2.1 vinyl-fs@2.4.4 fancy-log@1.3.3 ansi-colors@3.2.3 through2@4.0.2 pump@3.0.3 debounce@1.2.1 ternary-stream@3.0.0 jsonc-parser@3.2.0 --legacy-peer-deps --save-prod --force --ignore-scripts
 
 # Vérifier explicitement que gulp est installé
 echo ""
@@ -99,15 +117,23 @@ if [ ! -f "node_modules/.bin/gulp" ] && [ -d "node_modules/gulp" ]; then
 fi
 
 echo ""
-echo "🔍 Vérification de gulp..."
-echo "Gulp CLI: $(which gulp || echo 'non trouvé')"
-if [ -d "node_modules/gulp" ]; then
+echo "🔍 Vérification finale de gulp..."
+echo "Gulp CLI global: $(which gulp || echo 'non trouvé')"
+if [ -d "node_modules/gulp" ] && [ -f "node_modules/gulp/package.json" ]; then
     echo "✅ Gulp local: node_modules/gulp trouvé"
-    ls -la node_modules/gulp/package.json
+    echo "   Version: $(cat node_modules/gulp/package.json | grep '"version"' | head -1 || echo 'inconnue')"
+    # Vérifier aussi que gulp peut être résolu
+    if node -e "require.resolve('gulp')" 2>/dev/null; then
+        echo "   ✅ gulp résolvable par Node.js: $(node -e "console.log(require.resolve('gulp'))")"
+    else
+        echo "   ⚠️ gulp installé mais non résolvable par Node.js"
+    fi
 else
-    echo "❌ Gulp local: non trouvé"
-    echo "Contenu de node_modules (premiers fichiers):"
-    ls node_modules/ | head -10
+    echo "❌ ERREUR CRITIQUE: Gulp local NON trouvé malgré les tentatives d'installation !"
+    echo "   📋 Contenu de node_modules (recherche gulp):"
+    ls -la node_modules/ | grep -i gulp || echo "      (aucun dossier gulp)"
+    echo "   🛑 Le build va échouer - gulp est requis pour la compilation"
+    exit 1
 fi
 
 echo ""
