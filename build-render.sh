@@ -135,19 +135,46 @@ fi
 
 echo ""
 echo "🚀 Compilation web (extensions web)..."
+# Vérifier que webpack est installé
+if [ ! -d "node_modules/webpack" ]; then
+    echo "⚠️ webpack non trouvé, installation..."
+    npm install webpack webpack-cli --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || echo "⚠️ Installation webpack échouée"
+fi
+
 # Essayer plusieurs méthodes
 if command -v gulp >/dev/null 2>&1; then
-    echo "Utilisation de gulp CLI global"
-    gulp compile-web
+    echo "Utilisation de gulp CLI global pour compile-web"
+    gulp compile-web || {
+        echo "⚠️ gulp compile-web échoué, vérification des erreurs..."
+        exit 1
+    }
 elif [ -f "node_modules/.bin/gulp" ]; then
-    echo "Utilisation de node_modules/.bin/gulp"
-    node_modules/.bin/gulp compile-web
+    echo "Utilisation de node_modules/.bin/gulp pour compile-web"
+    node_modules/.bin/gulp compile-web || {
+        echo "⚠️ gulp compile-web échoué, vérification des erreurs..."
+        exit 1
+    }
 elif [ -f "node_modules/gulp/bin/gulp.js" ]; then
-    echo "Utilisation de node_modules/gulp/bin/gulp.js"
-    node node_modules/gulp/bin/gulp.js compile-web
+    echo "Utilisation de node_modules/gulp/bin/gulp.js pour compile-web"
+    node node_modules/gulp/bin/gulp.js compile-web || {
+        echo "⚠️ gulp compile-web échoué, vérification des erreurs..."
+        exit 1
+    }
 else
-    echo "Utilisation de npx gulp"
-    npx --yes gulp compile-web
+    echo "Utilisation de npx gulp pour compile-web"
+    npx --yes gulp compile-web || {
+        echo "⚠️ gulp compile-web échoué, vérification des erreurs..."
+        exit 1
+    }
+fi
+
+# Vérifier que les extensions ont été compilées
+echo ""
+echo "🔍 Vérification de la compilation des extensions..."
+if [ -f "extensions/configuration-editing/dist/browser/configurationEditingMain.js" ]; then
+    echo "✅ configuration-editing compilée"
+else
+    echo "⚠️ configuration-editing NON compilée (fichier attendu: extensions/configuration-editing/dist/browser/configurationEditingMain.js)"
 fi
 
 echo ""
