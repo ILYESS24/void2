@@ -190,13 +190,22 @@ if ! node -e "require.resolve('gulp')" 2>/dev/null; then
     # Vérifier que les dépendances de gulp sont installées
     if [ -f "node_modules/gulp/package.json" ]; then
         echo "   🔍 Vérification des dépendances de gulp..."
-        # Lire les dépendances de gulp
-        GULP_DEPS=$(cat node_modules/gulp/package.json | grep -A 50 '"dependencies"' | grep -E '^\s*"' | head -10 | sed 's/.*"\([^"]*\)":.*/\1/' || true)
+        # Lire les dépendances de gulp en extrayant correctement les noms de packages
+        # Utiliser jq si disponible, sinon parser avec sed/grep
+        if command -v jq >/dev/null 2>&1; then
+            GULP_DEPS=$(cat node_modules/gulp/package.json | jq -r '.dependencies | keys[]' 2>/dev/null || true)
+        else
+            # Parser manuellement en extrayant les noms entre guillemets
+            GULP_DEPS=$(cat node_modules/gulp/package.json | grep -A 100 '"dependencies"' | grep -E '^\s*"[^"]+":' | sed 's/.*"\([^"]*\)":.*/\1/' | grep -v "^dependencies$" | head -20 || true)
+        fi
         if [ -n "$GULP_DEPS" ]; then
             for DEP in $GULP_DEPS; do
-                if ! node -e "require.resolve('$DEP')" 2>/dev/null; then
-                    echo "   ⚠️ Dépendance manquante: $DEP"
-                    npm install "$DEP" --legacy-peer-deps --force --ignore-scripts --save-prod 2>&1 | tail -5 || true
+                # Ignorer les chaînes invalides
+                if [ -n "$DEP" ] && [ "$DEP" != "dependencies" ] && [ "$DEP" != "devDependencies" ] && echo "$DEP" | grep -qE '^[a-zA-Z0-9@/-]+$'; then
+                    if ! node -e "require.resolve('$DEP')" 2>/dev/null; then
+                        echo "   ⚠️ Dépendance manquante: $DEP"
+                        npm install "$DEP" --legacy-peer-deps --force --ignore-scripts --save-prod 2>&1 | tail -5 || true
+                    fi
                 fi
             done
         fi
