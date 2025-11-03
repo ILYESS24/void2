@@ -180,6 +180,33 @@ for (const dep of CRITICAL_DEPS) {
 	}
 }
 
+// Vérifier et installer jsonc-parser explicitement (requis par build/lib/extensions.js)
+console.log('🔍 Vérification finale de jsonc-parser...');
+try {
+	require.resolve('jsonc-parser');
+	console.log(`✅ jsonc-parser déjà présent: ${require.resolve('jsonc-parser')}`);
+} catch (error) {
+	console.log('⚠️ jsonc-parser manquant, installation finale...');
+	try {
+		execSync('npm install jsonc-parser@3.2.0 --legacy-peer-deps --save-prod --force --ignore-scripts', {
+			stdio: 'pipe',
+			cwd: APP_ROOT,
+			env: { ...process.env },
+			maxBuffer: 10 * 1024 * 1024
+		});
+		execSync('sleep 1', { stdio: 'ignore' });
+		// Vérifier après installation
+		try {
+			require.resolve('jsonc-parser');
+			console.log(`✅ jsonc-parser installé avec succès`);
+		} catch (err) {
+			console.error(`⚠️ jsonc-parser toujours non résolvable après installation: ${err.message}`);
+		}
+	} catch (installError) {
+		console.error(`❌ Erreur lors de l'installation de jsonc-parser: ${installError.message}`);
+	}
+}
+
 // Essayer de résoudre d'abord, installer seulement si nécessaire
 let testWebLocation;
 try {
