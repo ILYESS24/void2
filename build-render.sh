@@ -51,9 +51,18 @@ npm install gulp-watch --legacy-peer-deps --save-prod --force --ignore-scripts |
 }
 
 # Créer un stub pour vscode-gulp-watch si nécessaire
-if [ ! -d "node_modules/vscode-gulp-watch" ]; then
+if [ ! -f "node_modules/vscode-gulp-watch/index.js" ]; then
     echo "🔧 Création d'un stub pour vscode-gulp-watch..."
     mkdir -p node_modules/vscode-gulp-watch
+    # Créer package.json pour que Node.js le reconnaisse comme module
+    cat > node_modules/vscode-gulp-watch/package.json << 'PKGEOF'
+{
+  "name": "vscode-gulp-watch",
+  "version": "1.0.0",
+  "main": "index.js",
+  "description": "Stub for vscode-gulp-watch"
+}
+PKGEOF
     cat > node_modules/vscode-gulp-watch/index.js << 'EOF'
 // Stub pour vscode-gulp-watch - utilise gulp-watch ou chokidar comme alternative
 let watch;
@@ -68,7 +77,7 @@ try {
         const vinyl = require('vinyl');
         const path = require('path');
         const fs = require('fs');
-        
+
         watch = function(pattern, options) {
             options = options || {};
             const cwd = path.normalize(options.cwd || process.cwd());
@@ -77,9 +86,9 @@ try {
                 ignoreInitial: true,
                 persistent: true
             });
-            
+
             const stream = eventStream.through();
-            
+
             watcher.on('all', (event, filePath) => {
                 const fullPath = path.join(cwd, filePath);
                 fs.stat(fullPath, (err, stat) => {
@@ -107,11 +116,11 @@ try {
                     }
                 });
             });
-            
+
             watcher.on('error', (err) => {
                 stream.emit('error', err);
             });
-            
+
             return stream;
         };
     } catch (e2) {
@@ -125,7 +134,19 @@ try {
 
 module.exports = watch;
 EOF
-    echo "✅ Stub créé pour vscode-gulp-watch"
+    # Vérifier que les fichiers sont bien créés
+    if [ -f "node_modules/vscode-gulp-watch/index.js" ] && [ -f "node_modules/vscode-gulp-watch/package.json" ]; then
+        echo "✅ Stub créé pour vscode-gulp-watch (index.js et package.json)"
+        # Vérifier que Node.js peut le résoudre
+        if node -e "require.resolve('vscode-gulp-watch')" 2>/dev/null; then
+            echo "✅ vscode-gulp-watch résolvable par Node.js: $(node -e "console.log(require.resolve('vscode-gulp-watch'))")"
+        else
+            echo "⚠️ Stub créé mais non résolvable - cela pourrait être un problème"
+        fi
+    else
+        echo "❌ ERREUR: Stub créé mais fichiers manquants"
+        ls -la node_modules/vscode-gulp-watch/ 2>/dev/null || echo "   (dossier n'existe pas)"
+    fi
 else
     echo "✅ vscode-gulp-watch déjà présent"
 fi
@@ -282,9 +303,26 @@ fi
 if node -e "require.resolve('vscode-gulp-watch')" 2>/dev/null; then
     echo "✅ vscode-gulp-watch résolvable: $(node -e "console.log(require.resolve('vscode-gulp-watch'))")"
 else
-    echo "❌ ERREUR: vscode-gulp-watch toujours non résolvable même après création du stub"
-    echo "   🛑 Le build va échouer - vérification du stub..."
-    ls -la node_modules/vscode-gulp-watch/ 2>/dev/null || echo "      (stub non créé)"
+    echo "⚠️ vscode-gulp-watch non résolvable - recréation du stub..."
+    # Réessayer de créer le stub
+    mkdir -p node_modules/vscode-gulp-watch
+    cat > node_modules/vscode-gulp-watch/package.json << 'PKGEOF'
+{
+  "name": "vscode-gulp-watch",
+  "version": "1.0.0",
+  "main": "index.js",
+  "description": "Stub for vscode-gulp-watch"
+}
+PKGEOF
+    # Vérifier à nouveau après recréation
+    if node -e "require.resolve('vscode-gulp-watch')" 2>/dev/null; then
+        echo "✅ vscode-gulp-watch résolu après recréation"
+    else
+        echo "❌ ERREUR CRITIQUE: vscode-gulp-watch toujours non résolvable"
+        echo "   📋 Contenu de node_modules/vscode-gulp-watch:"
+        ls -la node_modules/vscode-gulp-watch/ 2>/dev/null || echo "      (dossier n'existe pas)"
+        echo "   🛑 Le build pourrait échouer si vscode-gulp-watch est requis"
+    fi
 fi
 
 echo ""
