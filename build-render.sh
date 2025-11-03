@@ -36,9 +36,28 @@ else
     echo "✅ gulp installé dans node_modules/gulp"
 fi
 
+# Installer toutes les autres dépendances critiques nécessaires pour les fichiers de build
+echo "Installation des dépendances critiques pour les fichiers de build (event-stream, debounce, gulp-filter, gulp-rename, ternary-stream)..."
+npm install event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 ternary-stream@3.0.0 --legacy-peer-deps --save-prod --force --ignore-scripts || {
+    echo "⚠️ Installation des dépendances de build échouée, réessai sans --ignore-scripts pour certaines..."
+    npm install event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 ternary-stream@3.0.0 --legacy-peer-deps --save-prod --force 2>&1 | tail -10
+}
+
+# Vérifier que debounce est résolvable (nécessaire pour build/lib/util.js)
+echo "🔍 Vérification de debounce..."
+if node -e "require.resolve('debounce')" 2>/dev/null; then
+    echo "✅ debounce résolvable: $(node -e "console.log(require.resolve('debounce'))")"
+else
+    echo "❌ ERREUR: debounce non résolvable après installation !"
+    echo "   📋 Contenu de node_modules/debounce:"
+    ls -la node_modules/debounce/ 2>/dev/null || echo "      (dossier n'existe pas)"
+    echo "   🛑 Le build va échouer - debounce est requis pour build/lib/util.js"
+    exit 1
+fi
+
 # Installer toutes les autres dépendances critiques
-echo "Installation de typescript, @vscode/test-web, rimraf, event-stream, gulp-rename, gulp-filter, gulp-buffer, gulp-vinyl-zip, glob, vinyl, vinyl-fs, fancy-log, ansi-colors, through2, pump, debounce, ternary-stream, jsonc-parser..."
-npm install typescript @vscode/test-web rimraf event-stream gulp-rename@1.2.0 gulp-filter@5.1.0 gulp-buffer@0.0.2 gulp-vinyl-zip@2.0.3 glob@5.0.13 vinyl@2.2.1 vinyl-fs@2.4.4 fancy-log@1.3.3 ansi-colors@3.2.3 through2@4.0.2 pump@3.0.3 debounce@1.2.1 ternary-stream@3.0.0 jsonc-parser@3.2.0 --legacy-peer-deps --save-prod --force --ignore-scripts
+echo "Installation des autres dépendances critiques (typescript, @vscode/test-web, rimraf, gulp-buffer, gulp-vinyl-zip, glob, vinyl, vinyl-fs, fancy-log, ansi-colors, through2, pump, jsonc-parser)..."
+npm install typescript @vscode/test-web rimraf gulp-buffer@0.0.2 gulp-vinyl-zip@2.0.3 glob@5.0.13 vinyl@2.2.1 vinyl-fs@2.4.4 fancy-log@1.3.3 ansi-colors@3.2.3 through2@4.0.2 pump@3.0.3 jsonc-parser@3.2.0 --legacy-peer-deps --save-prod --force --ignore-scripts
 
 # Vérifier explicitement que gulp est installé
 echo ""
