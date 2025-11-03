@@ -526,14 +526,18 @@ if command -v gulp >/dev/null 2>&1; then
     }
 elif [ -f "node_modules/.bin/gulp" ]; then
     echo "Utilisation de gulp local pour transpile-extensions"
-    npx gulp transpile-extensions || {
+    ensure_vscode_gulp_watch
+    node_modules/.bin/gulp transpile-extensions || {
         echo "⚠️ transpile-extensions échoué, tentative avec compile-extensions..."
-        npx gulp compile-extensions || echo "⚠️ compile-extensions aussi échoué, continuation..."
+        ensure_vscode_gulp_watch
+        node_modules/.bin/gulp compile-extensions || echo "⚠️ compile-extensions aussi échoué, continuation..."
     }
 else
     echo "⚠️ gulp non trouvé, tentative avec node directement..."
+    ensure_vscode_gulp_watch
     node node_modules/gulp/bin/gulp.js transpile-extensions || {
         echo "⚠️ transpile-extensions échoué, tentative avec compile-extensions..."
+        ensure_vscode_gulp_watch
         node node_modules/gulp/bin/gulp.js compile-extensions || echo "⚠️ compile-extensions aussi échoué, continuation..."
     }
 fi
