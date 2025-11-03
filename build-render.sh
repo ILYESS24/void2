@@ -37,15 +37,15 @@ else
 fi
 
 # Installer toutes les autres dépendances critiques nécessaires pour les fichiers de build
-echo "Installation des dépendances critiques pour les fichiers de build (typescript, workerpool, postcss, event-stream, debounce, gulp-filter, gulp-rename, ternary-stream, lazy.js, source-map, gulp-sort)..."
-npm install typescript workerpool postcss@^8.4.33 event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 --legacy-peer-deps --save-prod --force --ignore-scripts || {
+echo "Installation des dépendances critiques pour les fichiers de build (typescript, workerpool, postcss, vscode-gulp-watch, event-stream, debounce, gulp-filter, gulp-rename, ternary-stream, lazy.js, source-map, gulp-sort)..."
+npm install typescript workerpool postcss@^8.4.33 @vscode/gulp-watch event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 --legacy-peer-deps --save-prod --force --ignore-scripts || {
     echo "⚠️ Installation des dépendances de build échouée, réessai sans --ignore-scripts pour certaines..."
-    npm install typescript workerpool postcss@^8.4.33 event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 --legacy-peer-deps --save-prod --force 2>&1 | tail -10
+    npm install typescript workerpool postcss@^8.4.33 @vscode/gulp-watch event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 --legacy-peer-deps --save-prod --force 2>&1 | tail -10
 }
 
 # Vérifier que les dépendances critiques sont résolvables
 echo "🔍 Vérification des dépendances critiques de build..."
-CRITICAL_BUILD_DEPS=("debounce" "typescript" "lazy.js" "source-map" "workerpool" "postcss")
+CRITICAL_BUILD_DEPS=("debounce" "typescript" "lazy.js" "source-map" "workerpool" "postcss" "vscode-gulp-watch")
 ALL_RESOLVABLE=true
 for dep in "${CRITICAL_BUILD_DEPS[@]}"; do
     if node -e "require.resolve('$dep')" 2>/dev/null; then
@@ -54,6 +54,14 @@ for dep in "${CRITICAL_BUILD_DEPS[@]}"; do
         echo "❌ ERREUR: $dep non résolvable après installation !"
         echo "   📋 Contenu de node_modules/$dep:"
         ls -la "node_modules/$dep/" 2>/dev/null || echo "      (dossier n'existe pas)"
+        # Essayer aussi avec @vscode/ prefix pour vscode-gulp-watch
+        if [ "$dep" = "vscode-gulp-watch" ]; then
+            if node -e "require.resolve('@vscode/gulp-watch')" 2>/dev/null; then
+                echo "   ✅ @vscode/gulp-watch résolvable (nom alternatif): $(node -e "console.log(require.resolve('@vscode/gulp-watch'))")"
+                ALL_RESOLVABLE=true
+                continue
+            fi
+        fi
         ALL_RESOLVABLE=false
     fi
 done
@@ -163,26 +171,46 @@ else
     exit 1
 fi
 
-# Vérification CRITIQUE de postcss juste avant l'exécution de gulp
+# Vérification CRITIQUE des modules juste avant l'exécution de gulp
 echo ""
-echo "🔍 Vérification finale de postcss (critique pour build/lib/postcss.js)..."
-if node -e "require.resolve('postcss')" 2>/dev/null; then
-    echo "✅ postcss résolvable: $(node -e "console.log(require.resolve('postcss'))")"
-else
-    echo "❌ ERREUR: postcss non résolvable avant exécution de gulp !"
-    echo "   📋 Contenu de node_modules/postcss:"
-    ls -la node_modules/postcss/ 2>/dev/null || echo "      (dossier n'existe pas)"
-    echo "   🔄 Installation d'urgence de postcss..."
-    npm install postcss@^8.4.33 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -20
-    # Vérifier à nouveau
-    if node -e "require.resolve('postcss')" 2>/dev/null; then
-        echo "✅ postcss résolu après installation d'urgence"
-    else
-        echo "❌ ERREUR CRITIQUE: postcss toujours non résolvable après installation d'urgence"
-        echo "   🛑 Le build va échouer - postcss est requis pour build/lib/postcss.js"
-        exit 1
+echo "🔍 Vérification finale des modules critiques avant gulp..."
+CRITICAL_MODULES=("postcss" "vscode-gulp-watch")
+for module in "${CRITICAL_MODULES[@]}"; do
+    MODULE_NAME="$module"
+    # vscode-gulp-watch peut être sous @vscode/gulp-watch
+    if [ "$module" = "vscode-gulp-watch" ]; then
+        MODULE_NAME="@vscode/gulp-watch"
     fi
-fi
+    if node -e "require.resolve('$MODULE_NAME')" 2>/dev/null; then
+        echo "✅ $module résolvable: $(node -e "console.log(require.resolve('$MODULE_NAME'))")"
+    else
+        echo "❌ ERREUR: $module non résolvable avant exécution de gulp !"
+        echo "   📋 Contenu de node_modules/$module:"
+        ls -la "node_modules/$module/" 2>/dev/null || echo "      (dossier n'existe pas)"
+        # Essayer aussi sans @vscode/ prefix
+        if [ "$module" = "vscode-gulp-watch" ]; then
+            if node -e "require.resolve('vscode-gulp-watch')" 2>/dev/null; then
+                echo "✅ vscode-gulp-watch résolvable (nom direct): $(node -e "console.log(require.resolve('vscode-gulp-watch'))")"
+                continue
+            fi
+            echo "   🔄 Installation d'urgence de @vscode/gulp-watch..."
+            npm install @vscode/gulp-watch --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -20
+        else
+            echo "   🔄 Installation d'urgence de $module..."
+            if [ "$module" = "postcss" ]; then
+                npm install postcss@^8.4.33 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -20
+            fi
+        fi
+        # Vérifier à nouveau
+        if node -e "require.resolve('$MODULE_NAME')" 2>/dev/null; then
+            echo "✅ $module résolu après installation d'urgence"
+        else
+            echo "❌ ERREUR CRITIQUE: $module toujours non résolvable après installation d'urgence"
+            echo "   🛑 Le build va échouer - $module est requis"
+            exit 1
+        fi
+    fi
+done
 
 echo ""
 echo "🔨 Compilation des extensions TypeScript d'abord..."
