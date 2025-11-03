@@ -78,7 +78,8 @@ const CRITICAL_DEPS = [
 	'through2',
 	'pump',
 	'fancy-log',
-	'ansi-colors'
+	'ansi-colors',
+	'debounce'
 ];
 
 // Vérifier et installer toutes les dépendances critiques
@@ -89,7 +90,7 @@ for (const dep of CRITICAL_DEPS) {
 	} catch (error) {
 		console.log(`⚠️ ${dep} manquant, installation...`);
 		ensureDependency(dep);
-		
+
 		// Retry avec attente
 		let resolved = false;
 		for (let i = 0; i < 5; i++) {

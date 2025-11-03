@@ -291,6 +291,17 @@ else
     echo "✅ pump déjà présent"
 fi
 
+echo "Vérification de debounce..."
+if ! node -e "require.resolve('debounce')" 2>/dev/null; then
+    echo "⚠️ debounce manquant, installation..."
+    npm install debounce@1.2.1 --legacy-peer-deps --no-save --force --ignore-scripts || {
+        echo "⚠️ Installation avec erreurs, mais on continue..."
+    }
+    sleep 2
+else
+    echo "✅ debounce déjà présent"
+fi
+
 # Vérification finale avec require.resolve (plus fiable que vérifier le dossier)
 echo ""
 echo "✅ Vérification finale des dépendances critiques:"
@@ -346,6 +357,12 @@ if node -e "require.resolve('pump')" 2>/dev/null; then
     echo "  ✓ pump (résolu: $(node -e "console.log(require.resolve('pump'))"))"
 else
     echo "  ✗ pump MANQUANT (ne peut pas être résolu)"
+fi
+
+if node -e "require.resolve('debounce')" 2>/dev/null; then
+    echo "  ✓ debounce (résolu: $(node -e "console.log(require.resolve('debounce'))"))"
+else
+    echo "  ✗ debounce MANQUANT (ne peut pas être résolu)"
 fi
 
 # Démarrer le serveur
