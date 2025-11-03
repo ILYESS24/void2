@@ -616,66 +616,68 @@ for pkg in merge-options copy-webpack-plugin path-browserify os-browserify util 
     fi
 done
 
-# Activer la gestion d'erreur stricte pour cette section
-set -e
-
-# Essayer plusieurs méthodes pour exécuter compile-web
+# Essayer plusieurs méthodes pour exécuter compile-web avec capture d'erreur détaillée
 COMPILE_WEB_SUCCESS=false
-if command -v gulp >/dev/null 2>&1; then
-    echo "Utilisation de gulp CLI global pour compile-web"
+COMPILE_WEB_ERROR=""
+
+compile_web_with_capture() {
+    local method=$1
+    shift
+    local cmd=("$@")
+    echo "🔨 Exécution de compile-web via $method..."
     ensure_vscode_gulp_watch
-    if gulp compile-web; then
+    
+    # Capturer à la fois stdout et stderr
+    local OUTPUT
+    if OUTPUT=$("${cmd[@]}" 2>&1); then
         COMPILE_WEB_SUCCESS=true
-        echo "✅ compile-web réussi avec gulp CLI global"
+        echo "✅ compile-web réussi via $method"
+        echo "$OUTPUT" | tail -20
+        return 0
     else
-        echo "⚠️ gulp compile-web échoué avec gulp CLI global, tentative avec node_modules..."
+        COMPILE_WEB_ERROR="$OUTPUT"
+        echo "❌ compile-web échoué via $method"
+        echo "📋 Dernières lignes de l'erreur:"
+        echo "$OUTPUT" | tail -30
+        return 1
     fi
+}
+
+if command -v gulp >/dev/null 2>&1; then
+    compile_web_with_capture "gulp CLI global" gulp compile-web && COMPILE_WEB_SUCCESS=true
 fi
 
 if [ "$COMPILE_WEB_SUCCESS" = false ] && [ -f "node_modules/.bin/gulp" ]; then
-    echo "Utilisation de node_modules/.bin/gulp pour compile-web"
-    ensure_vscode_gulp_watch
-    if node_modules/.bin/gulp compile-web; then
-        COMPILE_WEB_SUCCESS=true
-        echo "✅ compile-web réussi avec node_modules/.bin/gulp"
-    else
-        echo "⚠️ gulp compile-web échoué avec node_modules/.bin/gulp, tentative avec gulp.js direct..."
-    fi
+    compile_web_with_capture "node_modules/.bin/gulp" node_modules/.bin/gulp compile-web && COMPILE_WEB_SUCCESS=true
 fi
 
 if [ "$COMPILE_WEB_SUCCESS" = false ] && [ -f "node_modules/gulp/bin/gulp.js" ]; then
-    echo "Utilisation de node_modules/gulp/bin/gulp.js pour compile-web"
-    ensure_vscode_gulp_watch
-    if node node_modules/gulp/bin/gulp.js compile-web; then
-        COMPILE_WEB_SUCCESS=true
-        echo "✅ compile-web réussi avec node_modules/gulp/bin/gulp.js"
-    else
-        echo "⚠️ gulp compile-web échoué avec gulp.js direct, tentative avec npx..."
-    fi
+    compile_web_with_capture "gulp.js direct" node node_modules/gulp/bin/gulp.js compile-web && COMPILE_WEB_SUCCESS=true
 fi
 
 if [ "$COMPILE_WEB_SUCCESS" = false ]; then
-    echo "Utilisation de npx gulp pour compile-web"
-    ensure_vscode_gulp_watch
-    if npx --yes gulp compile-web; then
-        COMPILE_WEB_SUCCESS=true
-        echo "✅ compile-web réussi avec npx gulp"
-    else
-        echo "❌ ERREUR: Toutes les méthodes d'exécution de compile-web ont échoué"
-        echo "   📋 Vérification des dépendances webpack..."
-        for pkg in webpack webpack-cli ts-loader webpack-stream; do
-            if node -e "require.resolve('$pkg')" 2>/dev/null; then
-                echo "   ✅ $pkg résolvable"
-            else
-                echo "   ❌ $pkg NON résolvable"
-            fi
-        done
-        echo "   🛑 Le build va continuer mais les extensions web ne seront pas compilées"
-    fi
+    compile_web_with_capture "npx gulp" npx --yes gulp compile-web && COMPILE_WEB_SUCCESS=true
 fi
 
-# Désactiver la gestion d'erreur stricte pour permettre la continuation même si certaines extensions échouent
-set +e
+if [ "$COMPILE_WEB_SUCCESS" = false ]; then
+    echo ""
+    echo "❌ ERREUR: Toutes les méthodes d'exécution de compile-web ont échoué"
+    echo "   📋 Vérification des dépendances webpack critiques..."
+    for pkg in webpack webpack-cli ts-loader webpack-stream merge-options copy-webpack-plugin path-browserify os-browserify util; do
+        if node -e "require.resolve('$pkg')" 2>/dev/null; then
+            echo "   ✅ $pkg résolvable: $(node -e "console.log(require.resolve('$pkg'))")"
+        else
+            echo "   ❌ $pkg NON résolvable - REINSTALLATION..."
+            npm install $pkg --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -5 || true
+        fi
+    done
+    echo ""
+    echo "   📋 Résumé de l'erreur compile-web:"
+    echo "$COMPILE_WEB_ERROR" | grep -E "Error|Cannot find|Module not found|ERROR" | head -10
+    echo ""
+    echo "   ⚠️ Le build va continuer mais les extensions web ne seront pas compilées"
+    echo "   💡 Cela causera une page blanche - les extensions doivent être compilées pour que l'interface fonctionne"
+fi
 
 # Vérifier que les extensions ont été compilées
 echo ""
