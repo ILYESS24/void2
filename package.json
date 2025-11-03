@@ -56,6 +56,8 @@
     "watch-web": "node ./node_modules/gulp/bin/gulp.js watch-web",
     "test-render-build": "npm ci --legacy-peer-deps && npm run compile-web && npm run download-builtin-extensions",
     "test-render-server": "node server.js",
+    "build:cloudflare": "bash build-cloudflare.sh",
+    "deploy:cloudflare": "npm run build:cloudflare && wrangler pages deploy dist",
     "watch-cli": "node ./node_modules/gulp/bin/gulp.js watch-cli",
     "eslint": "node build/eslint",
     "stylelint": "node build/stylelint",
@@ -265,6 +267,7 @@
     "webpack": "^5.94.0",
     "webpack-cli": "^5.1.4",
     "webpack-stream": "^7.0.0",
+    "wrangler": "^3.0.0",
     "xml2js": "^0.5.0",
     "yaserver": "^0.4.0"
   },
