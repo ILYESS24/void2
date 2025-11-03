@@ -37,15 +37,15 @@ else
 fi
 
 # Installer toutes les autres dépendances critiques nécessaires pour les fichiers de build
-echo "Installation des dépendances critiques pour les fichiers de build (typescript, event-stream, debounce, gulp-filter, gulp-rename, ternary-stream, lazy.js, source-map, gulp-sort)..."
-npm install typescript event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 --legacy-peer-deps --save-prod --force --ignore-scripts || {
+echo "Installation des dépendances critiques pour les fichiers de build (typescript, workerpool, event-stream, debounce, gulp-filter, gulp-rename, ternary-stream, lazy.js, source-map, gulp-sort)..."
+npm install typescript workerpool event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 --legacy-peer-deps --save-prod --force --ignore-scripts || {
     echo "⚠️ Installation des dépendances de build échouée, réessai sans --ignore-scripts pour certaines..."
-    npm install typescript event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 --legacy-peer-deps --save-prod --force 2>&1 | tail -10
+    npm install typescript workerpool event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 --legacy-peer-deps --save-prod --force 2>&1 | tail -10
 }
 
 # Vérifier que les dépendances critiques sont résolvables
 echo "🔍 Vérification des dépendances critiques de build..."
-CRITICAL_BUILD_DEPS=("debounce" "typescript" "lazy.js" "source-map")
+CRITICAL_BUILD_DEPS=("debounce" "typescript" "lazy.js" "source-map" "workerpool")
 ALL_RESOLVABLE=true
 for dep in "${CRITICAL_BUILD_DEPS[@]}"; do
     if node -e "require.resolve('$dep')" 2>/dev/null; then
