@@ -457,6 +457,54 @@ else
     echo "  ✗ jsonc-parser MANQUANT (ne peut pas être résolu)"
 fi
 
+# Vérifier que les extensions web sont compilées
+echo ""
+echo "🔍 Vérification des extensions web compilées..."
+EXT_WEB_COUNT=0
+if [ -f "extensions/configuration-editing/dist/browser/configurationEditingMain.js" ]; then
+    echo "✅ configuration-editing compilée"
+    EXT_WEB_COUNT=$((EXT_WEB_COUNT+1))
+else
+    echo "⚠️ configuration-editing NON compilée"
+fi
+
+if [ -f "extensions/css-language-features/client/dist/browser/cssClientMain.js" ]; then
+    echo "✅ css-language-features compilée"
+    EXT_WEB_COUNT=$((EXT_WEB_COUNT+1))
+else
+    echo "⚠️ css-language-features NON compilée"
+fi
+
+if [ -f "extensions/html-language-features/client/dist/browser/htmlClientMain.js" ]; then
+    echo "✅ html-language-features compilée"
+    EXT_WEB_COUNT=$((EXT_WEB_COUNT+1))
+else
+    echo "⚠️ html-language-features NON compilée"
+fi
+
+if [ -f "extensions/markdown-language-features/dist/browser/extension.js" ]; then
+    echo "✅ markdown-language-features compilée"
+    EXT_WEB_COUNT=$((EXT_WEB_COUNT+1))
+else
+    echo "⚠️ markdown-language-features NON compilée"
+fi
+
+TOTAL_EXT_JS=$(find extensions -name "*.js" -path "*/dist/browser/*.js" 2>/dev/null | wc -l | xargs)
+echo ""
+echo "📊 Statistiques des extensions web:"
+echo "   Extensions principales vérifiées: $EXT_WEB_COUNT/4"
+echo "   Total fichiers .js dans dist/browser: $TOTAL_EXT_JS"
+
+if [ $EXT_WEB_COUNT -eq 0 ] && [ "$TOTAL_EXT_JS" = "0" ]; then
+    echo ""
+    echo "❌ ERREUR CRITIQUE: Aucune extension web n'est compilée !"
+    echo "   💡 Cela causera une page blanche - les extensions doivent être compilées lors du build"
+    echo "   📋 Tentative de vérification du dossier extensions..."
+    find extensions -type d -name "browser" -path "*/dist/browser" 2>/dev/null | head -5 || echo "   ⚠️ Aucun dossier dist/browser trouvé"
+    echo ""
+    echo "   ⚠️ Le serveur va démarrer mais l'interface ne fonctionnera pas sans les extensions"
+fi
+
 # Démarrer le serveur
 echo ""
 echo "🌐 Démarrage du serveur Node.js..."
