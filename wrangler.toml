@@ -1,25 +1,31 @@
 name = "void-code"
+main = "worker/index.js"
 compatibility_date = "2024-11-03"
-pages_build_output_dir = "dist"
+compatibility_flags = ["nodejs_compat"]
 
+# Variables d'environnement
+# Configurez BACKEND_URL avec l'URL de votre serveur backend (Render, Railway, etc.)
+# Exemple: BACKEND_URL = "https://votre-app.onrender.com"
+[vars]
+BACKEND_URL = "https://votre-backend.onrender.com"
+
+# KV Namespace pour les fichiers statiques (optionnel)
+# Créez un KV namespace dans Cloudflare Dashboard et ajoutez-le ici
+# [[kv_namespaces]]
+# binding = "STATIC_ASSETS"
+# id = "votre-kv-namespace-id"
+
+# Configuration pour les Workers
 [env.production]
 name = "void-code"
-route = { pattern = "void-code.pages.dev", zone_name = "pages.dev" }
+vars = { BACKEND_URL = "https://votre-backend.onrender.com" }
 
 [env.staging]
 name = "void-code-staging"
+vars = { BACKEND_URL = "https://votre-backend-staging.onrender.com" }
 
-[build]
-command = "npm run build:cloudflare"
-cwd = "."
-
-[site]
-bucket = "./dist"
-
-# Configuration pour les Workers (si nécessaire pour le backend)
-# Note: VS Code Web nécessite un serveur Node.js pour les WebSockets et extensions
-# Ce worker servira uniquement les fichiers statiques
-[[routes]]
-pattern = "/*"
-zone_name = "void-code.pages.dev"
+# Routes (si vous avez un domaine personnalisé)
+# [[routes]]
+# pattern = "votre-domaine.com/*"
+# zone_name = "votre-domaine.com"
 

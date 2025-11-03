@@ -1,0 +1,8 @@
+{
+  "name": "void-code-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker for Void Code",
+  "main": "index.js",
+  "type": "module"
+}
+
