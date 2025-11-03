@@ -171,10 +171,40 @@ fi
 # Vérifier que les extensions ont été compilées
 echo ""
 echo "🔍 Vérification de la compilation des extensions..."
+EXT_COUNT=0
 if [ -f "extensions/configuration-editing/dist/browser/configurationEditingMain.js" ]; then
     echo "✅ configuration-editing compilée"
+    EXT_COUNT=$((EXT_COUNT+1))
 else
-    echo "⚠️ configuration-editing NON compilée (fichier attendu: extensions/configuration-editing/dist/browser/configurationEditingMain.js)"
+    echo "⚠️ configuration-editing NON compilée"
+    echo "   📂 Vérification du dossier:"
+    ls -la extensions/configuration-editing/dist/browser/ 2>/dev/null || echo "   ❌ Dossier dist/browser n'existe pas"
+fi
+
+if [ -f "extensions/css-language-features/client/dist/browser/cssClientMain.js" ]; then
+    echo "✅ css-language-features compilée"
+    EXT_COUNT=$((EXT_COUNT+1))
+else
+    echo "⚠️ css-language-features NON compilée"
+fi
+
+if [ -f "extensions/git-base/dist/browser/extension.js" ]; then
+    echo "✅ git-base compilée"
+    EXT_COUNT=$((EXT_COUNT+1))
+else
+    echo "⚠️ git-base NON compilée"
+fi
+
+echo ""
+if [ $EXT_COUNT -eq 0 ]; then
+    echo "❌ AUCUNE extension n'a été compilée !"
+    echo "📋 Liste des fichiers webpack config trouvés:"
+    find extensions -name "extension-browser.webpack.config.js" 2>/dev/null | head -10
+    echo ""
+    echo "💡 Tentative de compilation manuelle d'une extension test..."
+    cd extensions/configuration-editing 2>/dev/null && npm run compile-web 2>&1 | tail -20 || echo "⚠️ Échec compilation manuelle" && cd ../..
+else
+    echo "✅ $EXT_COUNT extension(s) compilée(s)"
 fi
 
 echo ""
