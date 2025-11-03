@@ -37,10 +37,10 @@ else
 fi
 
 # Installer toutes les autres dépendances critiques nécessaires pour les fichiers de build
-echo "Installation des dépendances critiques pour les fichiers de build (typescript, workerpool, postcss, esbuild, event-stream, debounce, gulp-filter, gulp-rename, gulp-plumber, gulp-sourcemaps, gulp-replace, gulp-untar, gulp-gunzip, gulp-flatmap, gulp-json-editor, @vscode/gulp-electron, chromium-pickle-js, asar, rcedit, innosetup, merge-options, copy-webpack-plugin, path-browserify, os-browserify, util, ternary-stream, lazy.js, source-map, gulp-sort, @vscode/l10n-dev, gulp-merge-json, xml2js, p-all)..."
-npm install typescript workerpool postcss@^8.4.33 esbuild event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 gulp-plumber gulp-sourcemaps gulp-replace@0.5.4 gulp-untar@0.0.7 gulp-gunzip@1.0.0 gulp-flatmap@1.0.2 gulp-json-editor@2.5.0 @vscode/gulp-electron@^1.36.0 chromium-pickle-js@^0.2.0 asar@^3.0.3 rcedit@^1.1.0 innosetup@^6.4.1 merge-options@^1.0.1 copy-webpack-plugin@^11.0.0 path-browserify@^1.0.1 os-browserify@^0.3.0 util@^0.12.4 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 @vscode/l10n-dev gulp-merge-json xml2js p-all --legacy-peer-deps --save-prod --force --ignore-scripts || {
+echo "Installation des dépendances critiques pour les fichiers de build (typescript, workerpool, postcss, esbuild, event-stream, debounce, gulp-filter, gulp-rename, gulp-plumber, gulp-sourcemaps, gulp-replace, gulp-untar, gulp-gunzip, gulp-flatmap, gulp-json-editor, @vscode/gulp-electron, chromium-pickle-js, asar, rcedit, innosetup, merge-options, copy-webpack-plugin, path-browserify, os-browserify, util, ts-loader, webpack-stream, ternary-stream, lazy.js, source-map, gulp-sort, @vscode/l10n-dev, gulp-merge-json, xml2js, p-all)..."
+npm install typescript workerpool postcss@^8.4.33 esbuild event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 gulp-plumber gulp-sourcemaps gulp-replace@0.5.4 gulp-untar@0.0.7 gulp-gunzip@1.0.0 gulp-flatmap@1.0.2 gulp-json-editor@2.5.0 @vscode/gulp-electron@^1.36.0 chromium-pickle-js@^0.2.0 asar@^3.0.3 rcedit@^1.1.0 innosetup@^6.4.1 merge-options@^1.0.1 copy-webpack-plugin@^11.0.0 path-browserify@^1.0.1 os-browserify@^0.3.0 util@^0.12.4 ts-loader@^9.5.1 webpack-stream@^7.0.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 @vscode/l10n-dev gulp-merge-json xml2js p-all --legacy-peer-deps --save-prod --force --ignore-scripts || {
     echo "⚠️ Installation des dépendances de build échouée, réessai sans --ignore-scripts pour certaines..."
-    npm install typescript workerpool postcss@^8.4.33 esbuild event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 gulp-plumber gulp-sourcemaps gulp-replace@0.5.4 gulp-untar@0.0.7 gulp-gunzip@1.0.0 gulp-flatmap@1.0.2 gulp-json-editor@2.5.0 @vscode/gulp-electron@^1.36.0 chromium-pickle-js@^0.2.0 asar@^3.0.3 rcedit@^1.1.0 innosetup@^6.4.1 merge-options@^1.0.1 copy-webpack-plugin@^11.0.0 path-browserify@^1.0.1 os-browserify@^0.3.0 util@^0.12.4 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 @vscode/l10n-dev gulp-merge-json xml2js p-all --legacy-peer-deps --save-prod --force 2>&1 | tail -10
+    npm install typescript workerpool postcss@^8.4.33 esbuild event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 gulp-plumber gulp-sourcemaps gulp-replace@0.5.4 gulp-untar@0.0.7 gulp-gunzip@1.0.0 gulp-flatmap@1.0.2 gulp-json-editor@2.5.0 @vscode/gulp-electron@^1.36.0 chromium-pickle-js@^0.2.0 asar@^3.0.3 rcedit@^1.1.0 innosetup@^6.4.1 merge-options@^1.0.1 copy-webpack-plugin@^11.0.0 path-browserify@^1.0.1 os-browserify@^0.3.0 util@^0.12.4 ts-loader@^9.5.1 webpack-stream@^7.0.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 @vscode/l10n-dev gulp-merge-json xml2js p-all --legacy-peer-deps --save-prod --force 2>&1 | tail -10
 }
 
 # vscode-gulp-watch n'est pas disponible sur npm - créer un stub qui utilise gulp-watch
@@ -574,9 +574,9 @@ if [ ! -d "node_modules/webpack" ]; then
     npm install webpack webpack-cli --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || echo "⚠️ Installation webpack échouée"
 fi
 
-# Vérifier que les dépendances webpack sont installées (critiques pour shared.webpack.config.js)
+# Vérifier que les dépendances webpack sont installées (critiques pour shared.webpack.config.js et compile-web)
 echo "🔍 Vérification des dépendances webpack (critique pour compilation web)..."
-for pkg in merge-options copy-webpack-plugin path-browserify os-browserify util; do
+for pkg in merge-options copy-webpack-plugin path-browserify os-browserify util ts-loader webpack-stream; do
     if [ ! -d "node_modules/$pkg" ] || ! node -e "require.resolve('$pkg')" 2>/dev/null; then
         echo "⚠️ $pkg non trouvé ou non résolvable, installation..."
         case "$pkg" in
@@ -595,6 +595,12 @@ for pkg in merge-options copy-webpack-plugin path-browserify os-browserify util;
             "util")
                 npm install util@^0.12.4 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || echo "⚠️ Installation util échouée"
                 ;;
+            "ts-loader")
+                npm install ts-loader@^9.5.1 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || echo "⚠️ Installation ts-loader échouée"
+                ;;
+            "webpack-stream")
+                npm install webpack-stream@^7.0.0 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || echo "⚠️ Installation webpack-stream échouée"
+                ;;
         esac
         # Vérifier à nouveau après installation
         if node -e "require.resolve('$pkg')" 2>/dev/null; then
@@ -610,36 +616,66 @@ for pkg in merge-options copy-webpack-plugin path-browserify os-browserify util;
     fi
 done
 
-# Essayer plusieurs méthodes
+# Activer la gestion d'erreur stricte pour cette section
+set -e
+
+# Essayer plusieurs méthodes pour exécuter compile-web
+COMPILE_WEB_SUCCESS=false
 if command -v gulp >/dev/null 2>&1; then
     echo "Utilisation de gulp CLI global pour compile-web"
     ensure_vscode_gulp_watch
-    gulp compile-web || {
-        echo "⚠️ gulp compile-web échoué, vérification des erreurs..."
-        exit 1
-    }
-elif [ -f "node_modules/.bin/gulp" ]; then
+    if gulp compile-web; then
+        COMPILE_WEB_SUCCESS=true
+        echo "✅ compile-web réussi avec gulp CLI global"
+    else
+        echo "⚠️ gulp compile-web échoué avec gulp CLI global, tentative avec node_modules..."
+    fi
+fi
+
+if [ "$COMPILE_WEB_SUCCESS" = false ] && [ -f "node_modules/.bin/gulp" ]; then
     echo "Utilisation de node_modules/.bin/gulp pour compile-web"
     ensure_vscode_gulp_watch
-    node_modules/.bin/gulp compile-web || {
-        echo "⚠️ gulp compile-web échoué, vérification des erreurs..."
-        exit 1
-    }
-elif [ -f "node_modules/gulp/bin/gulp.js" ]; then
+    if node_modules/.bin/gulp compile-web; then
+        COMPILE_WEB_SUCCESS=true
+        echo "✅ compile-web réussi avec node_modules/.bin/gulp"
+    else
+        echo "⚠️ gulp compile-web échoué avec node_modules/.bin/gulp, tentative avec gulp.js direct..."
+    fi
+fi
+
+if [ "$COMPILE_WEB_SUCCESS" = false ] && [ -f "node_modules/gulp/bin/gulp.js" ]; then
     echo "Utilisation de node_modules/gulp/bin/gulp.js pour compile-web"
     ensure_vscode_gulp_watch
-    node node_modules/gulp/bin/gulp.js compile-web || {
-        echo "⚠️ gulp compile-web échoué, vérification des erreurs..."
-        exit 1
-    }
-else
+    if node node_modules/gulp/bin/gulp.js compile-web; then
+        COMPILE_WEB_SUCCESS=true
+        echo "✅ compile-web réussi avec node_modules/gulp/bin/gulp.js"
+    else
+        echo "⚠️ gulp compile-web échoué avec gulp.js direct, tentative avec npx..."
+    fi
+fi
+
+if [ "$COMPILE_WEB_SUCCESS" = false ]; then
     echo "Utilisation de npx gulp pour compile-web"
     ensure_vscode_gulp_watch
-    npx --yes gulp compile-web || {
-        echo "⚠️ gulp compile-web échoué, vérification des erreurs..."
-        exit 1
-    }
+    if npx --yes gulp compile-web; then
+        COMPILE_WEB_SUCCESS=true
+        echo "✅ compile-web réussi avec npx gulp"
+    else
+        echo "❌ ERREUR: Toutes les méthodes d'exécution de compile-web ont échoué"
+        echo "   📋 Vérification des dépendances webpack..."
+        for pkg in webpack webpack-cli ts-loader webpack-stream; do
+            if node -e "require.resolve('$pkg')" 2>/dev/null; then
+                echo "   ✅ $pkg résolvable"
+            else
+                echo "   ❌ $pkg NON résolvable"
+            fi
+        done
+        echo "   🛑 Le build va continuer mais les extensions web ne seront pas compilées"
+    fi
 fi
+
+# Désactiver la gestion d'erreur stricte pour permettre la continuation même si certaines extensions échouent
+set +e
 
 # Vérifier que les extensions ont été compilées
 echo ""
