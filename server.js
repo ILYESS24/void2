@@ -65,6 +65,52 @@ function ensureDependency(packageName) {
 // Vérifier et installer les dépendances critiques au démarrage
 console.log('🔍 Vérification des dépendances critiques...');
 
+// Liste des dépendances critiques nécessaires au runtime
+const CRITICAL_DEPS = [
+	'@vscode/test-web',
+	'rimraf',
+	'event-stream',
+	'gulp',
+	'gulp-rename',
+	'glob',
+	'vinyl',
+	'vinyl-fs',
+	'through2',
+	'pump',
+	'fancy-log',
+	'ansi-colors'
+];
+
+// Vérifier et installer toutes les dépendances critiques
+for (const dep of CRITICAL_DEPS) {
+	try {
+		require.resolve(dep);
+		console.log(`✅ ${dep} déjà présent`);
+	} catch (error) {
+		console.log(`⚠️ ${dep} manquant, installation...`);
+		ensureDependency(dep);
+		
+		// Retry avec attente
+		let resolved = false;
+		for (let i = 0; i < 5; i++) {
+			try {
+				require.resolve(dep);
+				console.log(`✅ ${dep} trouvé après installation`);
+				resolved = true;
+				break;
+			} catch (err) {
+				if (i < 4) {
+					console.log(`⏳ Tentative ${i + 1}/5 pour ${dep}, attente...`);
+					execSync('sleep 1', { stdio: 'ignore' });
+				}
+			}
+		}
+		if (!resolved) {
+			console.error(`❌ Impossible de résoudre ${dep} après installation`);
+		}
+	}
+}
+
 // Essayer de résoudre d'abord, installer seulement si nécessaire
 let testWebLocation;
 try {
@@ -102,14 +148,14 @@ try {
 			} else {
 				console.error(`   node_modules/@vscode n'existe pas`);
 			}
-			
+
 			// Essayer d'installer manuellement avec extraction directe
 			console.error('🔄 Tentative d\'installation manuelle finale...');
 			const testWebDir = `${APP_ROOT}/node_modules/@vscode/test-web`;
 			if (!existsSync(testWebDir)) {
 				fs.mkdirSync(testWebDir, { recursive: true });
 			}
-			
+
 			// Utiliser une commande shell pour extraire le package
 			const { execSync } = require('child_process');
 			try {
@@ -120,7 +166,7 @@ try {
 					execSync(`tar -xzf ${packFile} --strip-components=1`, { stdio: 'inherit' });
 					fs.unlinkSync(packFile);
 					console.error(`   ✅ Package extrait manuellement`);
-					
+
 					// Réessayer la résolution
 					testWebLocation = require.resolve('@vscode/test-web');
 					console.log(`✅ @vscode/test-web trouvé après extraction manuelle: ${testWebLocation}`);
@@ -134,7 +180,7 @@ try {
 		} catch (e) {
 			console.error(`   Erreur lors de la vérification: ${e.message}`);
 		}
-		
+
 		if (!resolved) {
 			process.exit(1);
 		}
