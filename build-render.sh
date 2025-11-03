@@ -37,27 +37,35 @@ else
 fi
 
 # Installer toutes les autres dépendances critiques nécessaires pour les fichiers de build
-echo "Installation des dépendances critiques pour les fichiers de build (event-stream, debounce, gulp-filter, gulp-rename, ternary-stream, lazy.js, source-map, gulp-sort)..."
-npm install event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 --legacy-peer-deps --save-prod --force --ignore-scripts || {
+echo "Installation des dépendances critiques pour les fichiers de build (typescript, event-stream, debounce, gulp-filter, gulp-rename, ternary-stream, lazy.js, source-map, gulp-sort)..."
+npm install typescript event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 --legacy-peer-deps --save-prod --force --ignore-scripts || {
     echo "⚠️ Installation des dépendances de build échouée, réessai sans --ignore-scripts pour certaines..."
-    npm install event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 --legacy-peer-deps --save-prod --force 2>&1 | tail -10
+    npm install typescript event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 --legacy-peer-deps --save-prod --force 2>&1 | tail -10
 }
 
-# Vérifier que debounce est résolvable (nécessaire pour build/lib/util.js)
-echo "🔍 Vérification de debounce..."
-if node -e "require.resolve('debounce')" 2>/dev/null; then
-    echo "✅ debounce résolvable: $(node -e "console.log(require.resolve('debounce'))")"
-else
-    echo "❌ ERREUR: debounce non résolvable après installation !"
-    echo "   📋 Contenu de node_modules/debounce:"
-    ls -la node_modules/debounce/ 2>/dev/null || echo "      (dossier n'existe pas)"
-    echo "   🛑 Le build va échouer - debounce est requis pour build/lib/util.js"
+# Vérifier que les dépendances critiques sont résolvables
+echo "🔍 Vérification des dépendances critiques de build..."
+CRITICAL_BUILD_DEPS=("debounce" "typescript" "lazy.js" "source-map")
+ALL_RESOLVABLE=true
+for dep in "${CRITICAL_BUILD_DEPS[@]}"; do
+    if node -e "require.resolve('$dep')" 2>/dev/null; then
+        echo "✅ $dep résolvable: $(node -e "console.log(require.resolve('$dep'))")"
+    else
+        echo "❌ ERREUR: $dep non résolvable après installation !"
+        echo "   📋 Contenu de node_modules/$dep:"
+        ls -la "node_modules/$dep/" 2>/dev/null || echo "      (dossier n'existe pas)"
+        ALL_RESOLVABLE=false
+    fi
+done
+
+if [ "$ALL_RESOLVABLE" = false ]; then
+    echo "   🛑 Le build va échouer - certaines dépendances critiques ne sont pas résolvables"
     exit 1
 fi
 
-# Installer toutes les autres dépendances critiques
-echo "Installation des autres dépendances critiques (typescript, @vscode/test-web, rimraf, gulp-buffer, gulp-vinyl-zip, glob, vinyl, vinyl-fs, fancy-log, ansi-colors, through2, pump, jsonc-parser)..."
-npm install typescript @vscode/test-web rimraf gulp-buffer@0.0.2 gulp-vinyl-zip@2.0.3 glob@5.0.13 vinyl@2.2.1 vinyl-fs@2.4.4 fancy-log@1.3.3 ansi-colors@3.2.3 through2@4.0.2 pump@3.0.3 jsonc-parser@3.2.0 --legacy-peer-deps --save-prod --force --ignore-scripts
+# Installer toutes les autres dépendances critiques (typescript déjà installé, on ne le réinstalle pas)
+echo "Installation des autres dépendances critiques (@vscode/test-web, rimraf, gulp-buffer, gulp-vinyl-zip, glob, vinyl, vinyl-fs, fancy-log, ansi-colors, through2, pump, jsonc-parser)..."
+npm install @vscode/test-web rimraf gulp-buffer@0.0.2 gulp-vinyl-zip@2.0.3 glob@5.0.13 vinyl@2.2.1 vinyl-fs@2.4.4 fancy-log@1.3.3 ansi-colors@3.2.3 through2@4.0.2 pump@3.0.3 jsonc-parser@3.2.0 --legacy-peer-deps --save-prod --force --ignore-scripts
 
 # Vérifier explicitement que gulp est installé
 echo ""
