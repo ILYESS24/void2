@@ -727,6 +727,12 @@ echo "   Extensions trouvées: $EXT_COUNT"
 echo "   Total fichiers .js dans dist/browser: $TOTAL_JS_FILES"
 
 echo ""
+echo "📋 Toutes les extensions compilées (liste complète):"
+find extensions -name "*.js" -path "*/dist/browser/*.js" 2>/dev/null | while read file; do
+    echo "   ✓ $file"
+done | head -30
+
+echo ""
 if [ $EXT_COUNT -eq 0 ] && [ $TOTAL_JS_FILES -eq 0 ]; then
     echo "❌ ERREUR CRITIQUE: AUCUNE extension n'a été compilée !"
     echo "📋 Liste des fichiers webpack config trouvés:"
