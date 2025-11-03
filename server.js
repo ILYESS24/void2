@@ -60,7 +60,7 @@ function ensureDependency(packageName) {
 					if (existsSync(packageJsonPath)) {
 						// Essayer de résoudre via le chemin parent
 						const parentPath = path.dirname(nodeModulesPath);
-						Module._resolveLookupPaths = function(request, parent, newReturn) {
+						Module._resolveLookupPaths = function (request, parent, newReturn) {
 							const paths = Module._nodeModulePaths(parent.filename || parent);
 							return [packageName].includes(request) ? [[parentPath], paths] : [paths];
 						};
@@ -82,7 +82,7 @@ function ensureDependency(packageName) {
 				require.resolve(packageName);
 				canResolveNow = true;
 			} catch { }
-			
+
 			if (exists || canResolveNow) {
 				if (exists && canResolveNow) {
 					console.log(`✅ ${packageName} installé avec succès (dossier ET résolution OK)`);
@@ -141,7 +141,8 @@ const CRITICAL_DEPS = [
 	'ansi-colors',
 	'debounce',
 	'ternary-stream',
-	'gulp-vinyl-zip'
+	'gulp-vinyl-zip',
+	'jsonc-parser'
 ];
 
 // Vérifier et installer toutes les dépendances critiques

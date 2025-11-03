@@ -353,6 +353,17 @@ else
     echo "✅ gulp-vinyl-zip déjà présent"
 fi
 
+echo "Vérification de jsonc-parser..."
+if ! node -e "require.resolve('jsonc-parser')" 2>/dev/null; then
+    echo "⚠️ jsonc-parser manquant, installation..."
+    npm install jsonc-parser@3.2.0 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || {
+        echo "⚠️ Installation avec erreurs, mais on continue..."
+    }
+    sleep 1
+else
+    echo "✅ jsonc-parser déjà présent"
+fi
+
 # Vérification finale avec require.resolve (plus fiable que vérifier le dossier)
 echo ""
 echo "✅ Vérification finale des dépendances critiques:"
@@ -438,6 +449,12 @@ if node -e "require.resolve('gulp-vinyl-zip')" 2>/dev/null; then
     echo "  ✓ gulp-vinyl-zip (résolu: $(node -e "console.log(require.resolve('gulp-vinyl-zip'))"))"
 else
     echo "  ✗ gulp-vinyl-zip MANQUANT (ne peut pas être résolu)"
+fi
+
+if node -e "require.resolve('jsonc-parser')" 2>/dev/null; then
+    echo "  ✓ jsonc-parser (résolu: $(node -e "console.log(require.resolve('jsonc-parser'))"))"
+else
+    echo "  ✗ jsonc-parser MANQUANT (ne peut pas être résolu)"
 fi
 
 # Démarrer le serveur

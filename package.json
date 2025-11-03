@@ -154,7 +154,8 @@
     "gulp-filter": "^5.1.0",
     "gulp-buffer": "0.0.2",
     "ternary-stream": "^3.0.0",
-    "gulp-vinyl-zip": "^2.0.3"
+    "gulp-vinyl-zip": "^2.0.3",
+    "jsonc-parser": "^3.2.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.50.0",

@@ -19,8 +19,8 @@ npm install -g gulp-cli 2>/dev/null || true
 
 # Installer toutes les dépendances critiques en une seule commande
 # On utilise --no-save pour ne pas modifier package.json mais les installer dans node_modules
-echo "Installation de gulp, typescript, @vscode/test-web, rimraf, event-stream, gulp-rename, gulp-filter, gulp-buffer, gulp-vinyl-zip, glob, vinyl, vinyl-fs, fancy-log, ansi-colors, through2, pump, debounce, ternary-stream..."
-npm install gulp@4.0.0 typescript @vscode/test-web rimraf event-stream gulp-rename@1.2.0 gulp-filter@5.1.0 gulp-buffer@0.0.2 gulp-vinyl-zip@2.0.3 glob@5.0.13 vinyl@2.2.1 vinyl-fs@2.4.4 fancy-log@1.3.3 ansi-colors@3.2.3 through2@4.0.2 pump@3.0.3 debounce@1.2.1 ternary-stream@3.0.0 --legacy-peer-deps --save-prod --force --ignore-scripts
+echo "Installation de gulp, typescript, @vscode/test-web, rimraf, event-stream, gulp-rename, gulp-filter, gulp-buffer, gulp-vinyl-zip, glob, vinyl, vinyl-fs, fancy-log, ansi-colors, through2, pump, debounce, ternary-stream, jsonc-parser..."
+npm install gulp@4.0.0 typescript @vscode/test-web rimraf event-stream gulp-rename@1.2.0 gulp-filter@5.1.0 gulp-buffer@0.0.2 gulp-vinyl-zip@2.0.3 glob@5.0.13 vinyl@2.2.1 vinyl-fs@2.4.4 fancy-log@1.3.3 ansi-colors@3.2.3 through2@4.0.2 pump@3.0.3 debounce@1.2.1 ternary-stream@3.0.0 jsonc-parser@3.2.0 --legacy-peer-deps --save-prod --force --ignore-scripts
 
 # Vérifier explicitement que gulp est installé
 echo ""
