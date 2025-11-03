@@ -538,7 +538,45 @@ EOF
 }
 
 echo ""
-echo "🔨 Compilation des extensions TypeScript d'abord..."
+echo "🔨 Compilation du code source principal (workbench, etc.)..."
+ensure_vscode_gulp_watch
+# Compiler le code source principal (src -> out) AVANT les extensions
+if command -v gulp >/dev/null 2>&1; then
+    echo "Utilisation de gulp CLI global pour compile-client"
+    ensure_vscode_gulp_watch
+    gulp compile-client || {
+        echo "⚠️ compile-client échoué, tentative avec transpile-client..."
+        gulp transpile-client || echo "⚠️ transpile-client aussi échoué, continuation..."
+    }
+elif [ -f "node_modules/.bin/gulp" ]; then
+    echo "Utilisation de gulp local pour compile-client"
+    ensure_vscode_gulp_watch
+    node_modules/.bin/gulp compile-client || {
+        echo "⚠️ compile-client échoué, tentative avec transpile-client..."
+        ensure_vscode_gulp_watch
+        node_modules/.bin/gulp transpile-client || echo "⚠️ transpile-client aussi échoué, continuation..."
+    }
+else
+    echo "⚠️ gulp non trouvé, tentative avec node directement..."
+    ensure_vscode_gulp_watch
+    node node_modules/gulp/bin/gulp.js compile-client || {
+        echo "⚠️ compile-client échoué, tentative avec transpile-client..."
+        ensure_vscode_gulp_watch
+        node node_modules/gulp/bin/gulp.js transpile-client || echo "⚠️ transpile-client aussi échoué, continuation..."
+    }
+fi
+
+# Vérifier que le workbench est compilé
+if [ -f "out/vs/code/browser/workbench/workbench.js" ]; then
+    echo "✅ workbench.js compilé"
+else
+    echo "⚠️ workbench.js NON trouvé dans out/vs/code/browser/workbench/"
+    echo "   📋 Vérification des fichiers out/ trouvés:"
+    find out -name "*.js" -path "*/code/browser/*" 2>/dev/null | head -10 || echo "   ⚠️ Aucun fichier trouvé"
+fi
+
+echo ""
+echo "🔨 Compilation des extensions TypeScript..."
 ensure_vscode_gulp_watch
 # Compiler les extensions TypeScript avant de compiler le web
 if command -v gulp >/dev/null 2>&1; then
