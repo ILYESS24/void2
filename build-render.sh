@@ -37,10 +37,10 @@ else
 fi
 
 # Installer toutes les autres dépendances critiques nécessaires pour les fichiers de build
-echo "Installation des dépendances critiques pour les fichiers de build (typescript, workerpool, postcss, esbuild, event-stream, debounce, gulp-filter, gulp-rename, gulp-plumber, gulp-sourcemaps, gulp-replace, gulp-untar, gulp-gunzip, gulp-flatmap, gulp-json-editor, @vscode/gulp-electron, chromium-pickle-js, asar, ternary-stream, lazy.js, source-map, gulp-sort, @vscode/l10n-dev, gulp-merge-json, xml2js, p-all)..."
-npm install typescript workerpool postcss@^8.4.33 esbuild event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 gulp-plumber gulp-sourcemaps gulp-replace@0.5.4 gulp-untar@0.0.7 gulp-gunzip@1.0.0 gulp-flatmap@1.0.2 gulp-json-editor@2.5.0 @vscode/gulp-electron@^1.36.0 chromium-pickle-js@^0.2.0 asar@^3.0.3 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 @vscode/l10n-dev gulp-merge-json xml2js p-all --legacy-peer-deps --save-prod --force --ignore-scripts || {
+echo "Installation des dépendances critiques pour les fichiers de build (typescript, workerpool, postcss, esbuild, event-stream, debounce, gulp-filter, gulp-rename, gulp-plumber, gulp-sourcemaps, gulp-replace, gulp-untar, gulp-gunzip, gulp-flatmap, gulp-json-editor, @vscode/gulp-electron, chromium-pickle-js, asar, rcedit, ternary-stream, lazy.js, source-map, gulp-sort, @vscode/l10n-dev, gulp-merge-json, xml2js, p-all)..."
+npm install typescript workerpool postcss@^8.4.33 esbuild event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 gulp-plumber gulp-sourcemaps gulp-replace@0.5.4 gulp-untar@0.0.7 gulp-gunzip@1.0.0 gulp-flatmap@1.0.2 gulp-json-editor@2.5.0 @vscode/gulp-electron@^1.36.0 chromium-pickle-js@^0.2.0 asar@^3.0.3 rcedit@^1.1.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 @vscode/l10n-dev gulp-merge-json xml2js p-all --legacy-peer-deps --save-prod --force --ignore-scripts || {
     echo "⚠️ Installation des dépendances de build échouée, réessai sans --ignore-scripts pour certaines..."
-    npm install typescript workerpool postcss@^8.4.33 esbuild event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 gulp-plumber gulp-sourcemaps gulp-replace@0.5.4 gulp-untar@0.0.7 gulp-gunzip@1.0.0 gulp-flatmap@1.0.2 gulp-json-editor@2.5.0 @vscode/gulp-electron@^1.36.0 chromium-pickle-js@^0.2.0 asar@^3.0.3 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 @vscode/l10n-dev gulp-merge-json xml2js p-all --legacy-peer-deps --save-prod --force 2>&1 | tail -10
+    npm install typescript workerpool postcss@^8.4.33 esbuild event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 gulp-plumber gulp-sourcemaps gulp-replace@0.5.4 gulp-untar@0.0.7 gulp-gunzip@1.0.0 gulp-flatmap@1.0.2 gulp-json-editor@2.5.0 @vscode/gulp-electron@^1.36.0 chromium-pickle-js@^0.2.0 asar@^3.0.3 rcedit@^1.1.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 @vscode/l10n-dev gulp-merge-json xml2js p-all --legacy-peer-deps --save-prod --force 2>&1 | tail -10
 }
 
 # vscode-gulp-watch n'est pas disponible sur npm - créer un stub qui utilise gulp-watch
@@ -396,14 +396,14 @@ else
     fi
 fi
 
-# Installer explicitement les packages gulp requis par gulpfile.reh.js, gulpfile.scan.js et build/lib/asar.js
+# Installer explicitement les packages gulp requis par gulpfile.reh.js, gulpfile.scan.js, build/lib/asar.js et gulpfile.vscode.js
 echo ""
-echo "📦 Installation explicite des packages gulp requis par gulpfile.reh.js, gulpfile.scan.js et build/lib/asar.js..."
-npm install gulp-replace@0.5.4 gulp-untar@0.0.7 gulp-gunzip@1.0.0 gulp-flatmap@1.0.2 gulp-json-editor@2.5.0 @vscode/gulp-electron@^1.36.0 chromium-pickle-js@^0.2.0 asar@^3.0.3 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || echo "⚠️ Installation des packages gulp-reh échouée"
+echo "📦 Installation explicite des packages gulp requis par gulpfile.reh.js, gulpfile.scan.js, build/lib/asar.js et gulpfile.vscode.js..."
+npm install gulp-replace@0.5.4 gulp-untar@0.0.7 gulp-gunzip@1.0.0 gulp-flatmap@1.0.2 gulp-json-editor@2.5.0 @vscode/gulp-electron@^1.36.0 chromium-pickle-js@^0.2.0 asar@^3.0.3 rcedit@^1.1.0 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || echo "⚠️ Installation des packages gulp-reh échouée"
 
 # Vérifier que les packages sont bien installés
-echo "🔍 Vérification des packages gulp-reh, gulp-scan et asar..."
-for pkg in gulp-replace gulp-untar gulp-gunzip gulp-flatmap gulp-json-editor chromium-pickle-js asar; do
+echo "🔍 Vérification des packages gulp-reh, gulp-scan, asar et vscode..."
+for pkg in gulp-replace gulp-untar gulp-gunzip gulp-flatmap gulp-json-editor chromium-pickle-js asar rcedit; do
     if [ -d "node_modules/$pkg" ]; then
         echo "✅ $pkg installé"
     else
