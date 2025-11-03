@@ -324,6 +324,17 @@ else
     echo "✅ gulp-buffer déjà présent"
 fi
 
+echo "Vérification de ternary-stream..."
+if ! node -e "require.resolve('ternary-stream')" 2>/dev/null; then
+    echo "⚠️ ternary-stream manquant, installation..."
+    npm install ternary-stream@3.0.0 --legacy-peer-deps --no-save --force --ignore-scripts || {
+        echo "⚠️ Installation avec erreurs, mais on continue..."
+    }
+    sleep 2
+else
+    echo "✅ ternary-stream déjà présent"
+fi
+
 # Vérification finale avec require.resolve (plus fiable que vérifier le dossier)
 echo ""
 echo "✅ Vérification finale des dépendances critiques:"
@@ -397,6 +408,12 @@ if node -e "require.resolve('gulp-buffer')" 2>/dev/null; then
     echo "  ✓ gulp-buffer (résolu: $(node -e "console.log(require.resolve('gulp-buffer'))"))"
 else
     echo "  ✗ gulp-buffer MANQUANT (ne peut pas être résolu)"
+fi
+
+if node -e "require.resolve('ternary-stream')" 2>/dev/null; then
+    echo "  ✓ ternary-stream (résolu: $(node -e "console.log(require.resolve('ternary-stream'))"))"
+else
+    echo "  ✗ ternary-stream MANQUANT (ne peut pas être résolu)"
 fi
 
 # Démarrer le serveur

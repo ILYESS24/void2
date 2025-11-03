@@ -152,7 +152,8 @@
     "pump": "^3.0.3",
     "debounce": "^1.2.1",
     "gulp-filter": "^5.1.0",
-    "gulp-buffer": "0.0.2"
+    "gulp-buffer": "0.0.2",
+    "ternary-stream": "^3.0.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.50.0",

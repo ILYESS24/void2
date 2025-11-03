@@ -81,7 +81,8 @@ const CRITICAL_DEPS = [
 	'pump',
 	'fancy-log',
 	'ansi-colors',
-	'debounce'
+	'debounce',
+	'ternary-stream'
 ];
 
 // Vérifier et installer toutes les dépendances critiques
