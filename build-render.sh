@@ -37,10 +37,10 @@ else
 fi
 
 # Installer toutes les autres dépendances critiques nécessaires pour les fichiers de build
-echo "Installation des dépendances critiques pour les fichiers de build (typescript, workerpool, postcss, event-stream, debounce, gulp-filter, gulp-rename, ternary-stream, lazy.js, source-map, gulp-sort, @vscode/l10n-dev, gulp-merge-json, xml2js)..."
-npm install typescript workerpool postcss@^8.4.33 event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 @vscode/l10n-dev gulp-merge-json xml2js --legacy-peer-deps --save-prod --force --ignore-scripts || {
+echo "Installation des dépendances critiques pour les fichiers de build (typescript, workerpool, postcss, event-stream, debounce, gulp-filter, gulp-rename, gulp-plumber, ternary-stream, lazy.js, source-map, gulp-sort, @vscode/l10n-dev, gulp-merge-json, xml2js)..."
+npm install typescript workerpool postcss@^8.4.33 event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 gulp-plumber ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 @vscode/l10n-dev gulp-merge-json xml2js --legacy-peer-deps --save-prod --force --ignore-scripts || {
     echo "⚠️ Installation des dépendances de build échouée, réessai sans --ignore-scripts pour certaines..."
-    npm install typescript workerpool postcss@^8.4.33 event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 @vscode/l10n-dev gulp-merge-json xml2js --legacy-peer-deps --save-prod --force 2>&1 | tail -10
+    npm install typescript workerpool postcss@^8.4.33 event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 gulp-plumber ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 @vscode/l10n-dev gulp-merge-json xml2js --legacy-peer-deps --save-prod --force 2>&1 | tail -10
 }
 
 # vscode-gulp-watch n'est pas disponible sur npm - créer un stub qui utilise gulp-watch
@@ -77,7 +77,7 @@ try {
         const vinyl = require('vinyl');
         const path = require('path');
         const fs = require('fs');
-        
+
         watch = function(pattern, options) {
             options = options || {};
             const cwd = path.normalize(options.cwd || process.cwd());
@@ -86,9 +86,9 @@ try {
                 ignoreInitial: true,
                 persistent: true
             });
-            
+
             const stream = eventStream.through();
-            
+
             watcher.on('all', (event, filePath) => {
                 const fullPath = path.join(cwd, filePath);
                 fs.stat(fullPath, (err, stat) => {
@@ -116,11 +116,11 @@ try {
                     }
                 });
             });
-            
+
             watcher.on('error', (err) => {
                 stream.emit('error', err);
             });
-            
+
             return stream;
         };
     } catch (e2) {
@@ -396,11 +396,103 @@ else
     fi
 fi
 
-# Vérifier que vscode-gulp-watch est disponible (via notre stub si nécessaire)
-if node -e "require.resolve('vscode-gulp-watch')" 2>/dev/null; then
-    echo "✅ vscode-gulp-watch résolvable: $(node -e "console.log(require.resolve('vscode-gulp-watch'))")"
+# FORCER la vérification et recréation de vscode-gulp-watch juste avant gulp
+echo ""
+echo "🔍 Vérification FORCÉE de vscode-gulp-watch juste avant exécution de gulp..."
+# Toujours recréer pour être sûr
+rm -rf node_modules/vscode-gulp-watch 2>/dev/null || true
+mkdir -p node_modules/vscode-gulp-watch
+cat > node_modules/vscode-gulp-watch/package.json << 'PKGEOF'
+{
+  "name": "vscode-gulp-watch",
+  "version": "1.0.0",
+  "main": "index.js",
+  "description": "Stub for vscode-gulp-watch"
+}
+PKGEOF
+cat > node_modules/vscode-gulp-watch/index.js << 'EOF'
+// Stub pour vscode-gulp-watch - utilise gulp-watch ou chokidar comme alternative
+let watch;
+try {
+    // Essayer gulp-watch d'abord
+    watch = require('gulp-watch');
+} catch (e1) {
+    try {
+        // Essayer chokidar
+        const chokidar = require('chokidar');
+        const eventStream = require('event-stream');
+        const vinyl = require('vinyl');
+        const path = require('path');
+        const fs = require('fs');
+        
+        watch = function(pattern, options) {
+            options = options || {};
+            const cwd = path.normalize(options.cwd || process.cwd());
+            const watcher = chokidar.watch(pattern, {
+                cwd: cwd,
+                ignoreInitial: true,
+                persistent: true
+            });
+            
+            const stream = eventStream.through();
+            
+            watcher.on('all', (event, filePath) => {
+                const fullPath = path.join(cwd, filePath);
+                fs.stat(fullPath, (err, stat) => {
+                    if (err && err.code === 'ENOENT') {
+                        // Fichier supprimé
+                        const file = new vinyl({
+                            path: fullPath,
+                            base: options.base || cwd,
+                            event: 'unlink'
+                        });
+                        stream.emit('data', file);
+                    } else if (!err && stat.isFile()) {
+                        fs.readFile(fullPath, (err, contents) => {
+                            if (!err) {
+                                const file = new vinyl({
+                                    path: fullPath,
+                                    base: options.base || cwd,
+                                    contents: contents,
+                                    stat: stat,
+                                    event: event === 'add' ? 'add' : 'change'
+                                });
+                                stream.emit('data', file);
+                            }
+                        });
+                    }
+                });
+            });
+            
+            watcher.on('error', (err) => {
+                stream.emit('error', err);
+            });
+            
+            return stream;
+        };
+    } catch (e2) {
+        // Fallback minimal - retourner un stream vide
+        const eventStream = require('event-stream');
+        watch = function() {
+            return eventStream.through();
+        };
+    }
+}
+
+module.exports = watch;
+EOF
+# Vérifier immédiatement avec un nouveau processus Node.js pour éviter le cache
+if node -e "delete require.cache[require.resolve('vscode-gulp-watch')]; require.resolve('vscode-gulp-watch')" 2>/dev/null || node -e "require.resolve('vscode-gulp-watch')" 2>/dev/null; then
+    echo "✅ vscode-gulp-watch résolvable après recréation: $(node -e "console.log(require.resolve('vscode-gulp-watch'))")"
 else
-    echo "⚠️ vscode-gulp-watch non résolvable - recréation complète du stub..."
+    echo "❌ ERREUR CRITIQUE: vscode-gulp-watch toujours non résolvable après recréation FORCÉE"
+    echo "   📋 Contenu de node_modules/vscode-gulp-watch:"
+    ls -la node_modules/vscode-gulp-watch/ 2>/dev/null || echo "      (dossier n'existe pas)"
+    echo "   📋 Test direct:"
+    cat node_modules/vscode-gulp-watch/index.js | head -5 || echo "      (fichier non lisible)"
+    echo "   🛑 Le build va échouer - vscode-gulp-watch est requis"
+    exit 1
+fi
     # Réessayer de créer le stub complet (package.json ET index.js)
     mkdir -p node_modules/vscode-gulp-watch
     cat > node_modules/vscode-gulp-watch/package.json << 'PKGEOF'
