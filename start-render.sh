@@ -114,6 +114,42 @@ else
     echo "✅ event-stream déjà présent"
 fi
 
+echo "Vérification de gulp..."
+if ! node -e "require.resolve('gulp')" 2>/dev/null; then
+    echo "⚠️ gulp manquant, installation..."
+    npm install gulp@4.0.0 --legacy-peer-deps --no-save --force --ignore-scripts || {
+        echo "⚠️ Installation avec erreurs, mais on continue..."
+    }
+    # Attendre un peu pour que npm termine
+    sleep 2
+else
+    echo "✅ gulp déjà présent"
+fi
+
+echo "Vérification de gulp-rename..."
+if ! node -e "require.resolve('gulp-rename')" 2>/dev/null; then
+    echo "⚠️ gulp-rename manquant, installation..."
+    npm install gulp-rename@1.2.0 --legacy-peer-deps --no-save --force --ignore-scripts || {
+        echo "⚠️ Installation avec erreurs, mais on continue..."
+    }
+    # Attendre un peu pour que npm termine
+    sleep 2
+else
+    echo "✅ gulp-rename déjà présent"
+fi
+
+echo "Vérification de glob..."
+if ! node -e "require.resolve('glob')" 2>/dev/null; then
+    echo "⚠️ glob manquant, installation..."
+    npm install glob@5.0.13 --legacy-peer-deps --no-save --force --ignore-scripts || {
+        echo "⚠️ Installation avec erreurs, mais on continue..."
+    }
+    # Attendre un peu pour que npm termine
+    sleep 2
+else
+    echo "✅ glob déjà présent"
+fi
+
 # Vérification finale avec require.resolve (plus fiable que vérifier le dossier)
 echo ""
 echo "✅ Vérification finale des dépendances critiques:"
@@ -133,6 +169,24 @@ if node -e "require.resolve('event-stream')" 2>/dev/null; then
     echo "  ✓ event-stream (résolu: $(node -e "console.log(require.resolve('event-stream'))"))"
 else
     echo "  ✗ event-stream MANQUANT (ne peut pas être résolu)"
+fi
+
+if node -e "require.resolve('gulp')" 2>/dev/null; then
+    echo "  ✓ gulp (résolu: $(node -e "console.log(require.resolve('gulp'))"))"
+else
+    echo "  ✗ gulp MANQUANT (ne peut pas être résolu)"
+fi
+
+if node -e "require.resolve('gulp-rename')" 2>/dev/null; then
+    echo "  ✓ gulp-rename (résolu: $(node -e "console.log(require.resolve('gulp-rename'))"))"
+else
+    echo "  ✗ gulp-rename MANQUANT (ne peut pas être résolu)"
+fi
+
+if node -e "require.resolve('glob')" 2>/dev/null; then
+    echo "  ✓ glob (résolu: $(node -e "console.log(require.resolve('glob'))"))"
+else
+    echo "  ✗ glob MANQUANT (ne peut pas être résolu)"
 fi
 
 # Démarrer le serveur
