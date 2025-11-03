@@ -627,16 +627,22 @@ compile_web_with_capture() {
     echo "🔨 Exécution de compile-web via $method..."
     ensure_vscode_gulp_watch
     
-    # Capturer à la fois stdout et stderr
+    # Capturer à la fois stdout et stderr avec le vrai code de retour
     local OUTPUT
-    if OUTPUT=$("${cmd[@]}" 2>&1); then
+    local EXIT_CODE
+    set +e  # Désactiver erreur stricte pour capturer le code de retour
+    OUTPUT=$("${cmd[@]}" 2>&1)
+    EXIT_CODE=$?
+    set -e  # Réactiver erreur stricte
+    
+    if [ $EXIT_CODE -eq 0 ]; then
         COMPILE_WEB_SUCCESS=true
         echo "✅ compile-web réussi via $method"
         echo "$OUTPUT" | tail -20
         return 0
     else
         COMPILE_WEB_ERROR="$OUTPUT"
-        echo "❌ compile-web échoué via $method"
+        echo "❌ compile-web échoué via $method (code: $EXIT_CODE)"
         echo "📋 Dernières lignes de l'erreur:"
         echo "$OUTPUT" | tail -30
         return 1
@@ -661,8 +667,9 @@ fi
 
 if [ "$COMPILE_WEB_SUCCESS" = false ]; then
     echo ""
-    echo "❌ ERREUR: Toutes les méthodes d'exécution de compile-web ont échoué"
+    echo "❌ ERREUR CRITIQUE: Toutes les méthodes d'exécution de compile-web ont échoué"
     echo "   📋 Vérification des dépendances webpack critiques..."
+    set +e  # Désactiver erreur stricte pour diagnostic
     for pkg in webpack webpack-cli ts-loader webpack-stream merge-options copy-webpack-plugin path-browserify os-browserify util; do
         if node -e "require.resolve('$pkg')" 2>/dev/null; then
             echo "   ✅ $pkg résolvable: $(node -e "console.log(require.resolve('$pkg'))")"
@@ -671,12 +678,14 @@ if [ "$COMPILE_WEB_SUCCESS" = false ]; then
             npm install $pkg --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -5 || true
         fi
     done
+    set -e  # Réactiver erreur stricte
     echo ""
     echo "   📋 Résumé de l'erreur compile-web:"
-    echo "$COMPILE_WEB_ERROR" | grep -E "Error|Cannot find|Module not found|ERROR" | head -10
+    echo "$COMPILE_WEB_ERROR" | grep -E "Error|Cannot find|Module not found|ERROR|failed|Failed" | head -20
     echo ""
-    echo "   ⚠️ Le build va continuer mais les extensions web ne seront pas compilées"
-    echo "   💡 Cela causera une page blanche - les extensions doivent être compilées pour que l'interface fonctionne"
+    echo "   🛑 ARRÊT DU BUILD: compile-web est CRITIQUE - les extensions web DOIVENT être compilées"
+    echo "   💡 Sans compile-web, l'application affichera une page blanche"
+    exit 1  # Arrêter le build complètement
 fi
 
 # Vérifier que les extensions ont été compilées
@@ -708,14 +717,25 @@ fi
 
 echo ""
 if [ $EXT_COUNT -eq 0 ]; then
-    echo "❌ AUCUNE extension n'a été compilée !"
+    echo "❌ ERREUR CRITIQUE: AUCUNE extension n'a été compilée !"
     echo "📋 Liste des fichiers webpack config trouvés:"
-    find extensions -name "extension-browser.webpack.config.js" 2>/dev/null | head -10
+    find extensions -name "extension-browser.webpack.config.js" 2>/dev/null | head -10 || echo "   ⚠️ Aucun fichier webpack config trouvé"
+    echo ""
+    echo "📋 Vérification des dossiers dist/browser:"
+    find extensions -type d -name "browser" -path "*/dist/browser" 2>/dev/null | head -10 || echo "   ⚠️ Aucun dossier dist/browser trouvé"
     echo ""
     echo "💡 Tentative de compilation manuelle d'une extension test..."
-    cd extensions/configuration-editing 2>/dev/null && npm run compile-web 2>&1 | tail -20 || echo "⚠️ Échec compilation manuelle" && cd ../..
+    set +e
+    cd extensions/configuration-editing 2>/dev/null && npm run compile-web 2>&1 | tail -20 || echo "⚠️ Échec compilation manuelle"
+    cd ../.. 2>/dev/null
+    set -e
+    echo ""
+    echo "🛑 ARRÊT DU BUILD: Les extensions web doivent être compilées pour que l'application fonctionne"
+    exit 1
 else
     echo "✅ $EXT_COUNT extension(s) compilée(s)"
+    echo "📋 Liste des fichiers compilés trouvés:"
+    find extensions -name "*.js" -path "*/dist/browser/*.js" 2>/dev/null | head -20
 fi
 
 echo ""
