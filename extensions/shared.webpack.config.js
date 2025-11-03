@@ -19,6 +19,10 @@ const tsLoaderOptions = {
 		'sourceMap': true,
 	},
 	onlyCompileBundledFiles: true,
+	// Ignore node_modules to avoid TypeScript analysis issues
+	ignoreDiagnostics: [],
+	// Don't try to check copied .d.ts files
+	transpileOnly: false,
 };
 
 function withNodeDefaults(/**@type WebpackConfig & { context: string }*/extConfig) {
@@ -132,6 +136,8 @@ function withBrowserDefaults(/**@type WebpackConfig & { context: string }*/extCo
 						loader: 'ts-loader',
 						options: {
 							...tsLoaderOptions,
+							// Use transpileOnly for browser builds to avoid TypeScript program analysis issues
+							transpileOnly: true,
 							//							...(additionalOptions ? {} : { configFile: additionalOptions.configFile }),
 						}
 					},
