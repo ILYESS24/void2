@@ -72,6 +72,8 @@ const CRITICAL_DEPS = [
 	'event-stream',
 	'gulp',
 	'gulp-rename',
+	'gulp-filter',
+	'gulp-buffer',
 	'glob',
 	'vinyl',
 	'vinyl-fs',

@@ -302,6 +302,28 @@ else
     echo "✅ debounce déjà présent"
 fi
 
+echo "Vérification de gulp-filter..."
+if ! node -e "require.resolve('gulp-filter')" 2>/dev/null; then
+    echo "⚠️ gulp-filter manquant, installation..."
+    npm install gulp-filter@5.1.0 --legacy-peer-deps --no-save --force --ignore-scripts || {
+        echo "⚠️ Installation avec erreurs, mais on continue..."
+    }
+    sleep 2
+else
+    echo "✅ gulp-filter déjà présent"
+fi
+
+echo "Vérification de gulp-buffer..."
+if ! node -e "require.resolve('gulp-buffer')" 2>/dev/null; then
+    echo "⚠️ gulp-buffer manquant, installation..."
+    npm install gulp-buffer@0.0.2 --legacy-peer-deps --no-save --force --ignore-scripts || {
+        echo "⚠️ Installation avec erreurs, mais on continue..."
+    }
+    sleep 2
+else
+    echo "✅ gulp-buffer déjà présent"
+fi
+
 # Vérification finale avec require.resolve (plus fiable que vérifier le dossier)
 echo ""
 echo "✅ Vérification finale des dépendances critiques:"
@@ -363,6 +385,18 @@ if node -e "require.resolve('debounce')" 2>/dev/null; then
     echo "  ✓ debounce (résolu: $(node -e "console.log(require.resolve('debounce'))"))"
 else
     echo "  ✗ debounce MANQUANT (ne peut pas être résolu)"
+fi
+
+if node -e "require.resolve('gulp-filter')" 2>/dev/null; then
+    echo "  ✓ gulp-filter (résolu: $(node -e "console.log(require.resolve('gulp-filter'))"))"
+else
+    echo "  ✗ gulp-filter MANQUANT (ne peut pas être résolu)"
+fi
+
+if node -e "require.resolve('gulp-buffer')" 2>/dev/null; then
+    echo "  ✓ gulp-buffer (résolu: $(node -e "console.log(require.resolve('gulp-buffer'))"))"
+else
+    echo "  ✗ gulp-buffer MANQUANT (ne peut pas être résolu)"
 fi
 
 # Démarrer le serveur
