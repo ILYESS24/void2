@@ -27,27 +27,46 @@ function ensureDependency(packageName) {
 	if (!canResolve && !existsSync(nodeModulesPath)) {
 		console.log(`⚠️ ${packageName} manquant, installation...`);
 		try {
-			// Utiliser --ignore-scripts pour éviter la compilation des modules natifs
-			console.log(`📦 Exécution: npm install ${packageName} --legacy-peer-deps --no-save --force --ignore-scripts`);
-			execSync(`npm install ${packageName} --legacy-peer-deps --no-save --force --ignore-scripts`, {
+			// Utiliser --save-prod pour s'assurer que le package est bien installé
+			console.log(`📦 Exécution: npm install ${packageName} --legacy-peer-deps --save-prod --force --ignore-scripts`);
+			execSync(`npm install ${packageName} --legacy-peer-deps --save-prod --force --ignore-scripts`, {
 				stdio: 'inherit',
 				cwd: APP_ROOT,
 				env: { ...process.env }
 			});
 
-			// Vérifier après installation
-			if (existsSync(nodeModulesPath)) {
-				console.log(`✅ ${packageName} installé avec succès (dossier trouvé)`);
+			// Attendre un peu pour que npm termine complètement
+			execSync('sleep 2', { stdio: 'ignore' });
+
+			// Vérifier après installation - vérifier à la fois le dossier et require.resolve
+			const exists = existsSync(nodeModulesPath);
+			let canResolveNow = false;
+			try {
+				require.resolve(packageName);
+				canResolveNow = true;
+			} catch {}
+			
+			if (exists || canResolveNow) {
+				if (exists && canResolveNow) {
+					console.log(`✅ ${packageName} installé avec succès (dossier ET résolution OK)`);
+				} else if (exists) {
+					console.log(`⚠️ ${packageName} : dossier trouvé mais non résolvable`);
+					// Essayer de forcer le rechargement du cache
+					delete require.cache[require.resolve('module')];
+				} else if (canResolveNow) {
+					console.log(`✅ ${packageName} installé avec succès (résolvable même sans dossier visible)`);
+				}
 			} else {
-				console.log(`⚠️ ${packageName} : dossier non trouvé après installation`);
-				// Essayer de nettoyer le cache et réinstaller
+				console.log(`⚠️ ${packageName} : ni dossier ni résolution après installation`);
+				// Essayer de nettoyer le cache et réinstaller avec --save-prod
 				console.log(`🔄 Nettoyage du cache npm et nouvelle tentative...`);
 				try {
 					execSync('npm cache clean --force', { stdio: 'ignore', cwd: APP_ROOT });
-					execSync(`npm install ${packageName} --legacy-peer-deps --no-save --force --ignore-scripts`, {
+					execSync(`npm install ${packageName} --legacy-peer-deps --save-prod --force --ignore-scripts`, {
 						stdio: 'inherit',
 						cwd: APP_ROOT
 					});
+					execSync('sleep 2', { stdio: 'ignore' });
 				} catch (retryError) {
 					console.error(`❌ Échec de la réinstallation: ${retryError.message}`);
 				}
