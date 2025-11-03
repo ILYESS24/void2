@@ -124,73 +124,98 @@ if ! node -e "require.resolve('gulp')" 2>/dev/null; then
         rm -rf node_modules/gulp
     fi
     
-    # Installer directement dans node_modules sans --no-save
-    echo "   📦 Installation FORCÉE (sans --no-save)..."
-    npm install gulp@4.0.0 --legacy-peer-deps --force --ignore-scripts --save-dev 2>&1 | tail -20 || {
-        echo "⚠️ Installation avec erreurs, tentative alternative..."
-    }
+    # Essayer d'abord l'installation npm normale
+    echo "   📦 Tentative d'installation npm normale..."
+    npm install gulp@4.0.0 --legacy-peer-deps --force --ignore-scripts --save-dev 2>&1 | tail -20 || true
     
     # Vérifier si installé après
-    echo "   🔍 Vérification post-installation..."
-    if [ -d "node_modules/gulp" ]; then
+    echo "   🔍 Vérification post-installation npm..."
+    if [ -d "node_modules/gulp" ] && [ -f "node_modules/gulp/package.json" ]; then
         echo "   ✓ Dossier créé: node_modules/gulp"
-        echo "   📄 Contenu du dossier:"
-        ls -la node_modules/gulp/ | head -10
-        echo "   📦 package.json du package:"
-        cat node_modules/gulp/package.json | grep -E '"name"|"main"|"version"' | head -3 || true
+        # Vérifier si résolvable maintenant
+        if node -e "require.resolve('gulp')" 2>/dev/null; then
+            echo "   ✅ gulp résolu après installation npm"
+        else
+            echo "   ⚠️ gulp installé mais non résolvable, essai extraction manuelle..."
+            # Fallback à l'extraction manuelle
+            rm -rf node_modules/gulp
+            mkdir -p node_modules/gulp || true
+            cd node_modules/gulp || exit 1
+            echo "   📦 Téléchargement du package gulp..."
+            PACK_OUTPUT=$(npm pack gulp@4.0.0 2>&1)
+            echo "$PACK_OUTPUT"
+            PACK_FILE=$(echo "$PACK_OUTPUT" | grep "\.tgz$" | tail -1 | xargs)
+            if [ -n "$PACK_FILE" ] && [ -f "$PACK_FILE" ]; then
+                echo "   ✓ Fichier pack trouvé: $PACK_FILE"
+                echo "   📦 Extraction en cours..."
+                tar -xzf "$PACK_FILE" --strip-components=1 2>&1 | head -10 || {
+                    echo "   ⚠️ Erreur lors de l'extraction tar"
+                }
+                rm -f "$PACK_FILE"
+                if [ -f "package.json" ]; then
+                    echo "   ✓ Extraction réussie - package.json trouvé"
+                else
+                    echo "   ✗ package.json introuvable après extraction"
+                fi
+            else
+                echo "   ✗ Fichier pack non trouvé ou invalide"
+                echo "   📋 Sortie npm pack complète:"
+                echo "$PACK_OUTPUT"
+            fi
+            cd "$OLDPWD" || cd - > /dev/null || true
+        fi
     else
-        echo "   ✗ Dossier toujours absent après installation"
-        echo "   📋 Contenu de node_modules (gulp):"
-        ls -la node_modules/ | grep gulp || echo "      (aucun dossier gulp)"
-        echo "   🔄 Essai d'installation MANUELLE dans node_modules/gulp..."
+        echo "   ✗ Dossier absent après installation npm"
+        echo "   📋 Contenu de node_modules (recherche gulp):"
+        ls -la node_modules/ | grep -i gulp || echo "      (aucun dossier gulp)"
+        echo "   🔄 Essai d'installation MANUELLE directe..."
         mkdir -p node_modules/gulp || true
         cd node_modules/gulp || exit 1
-        PACK_FILE=$(npm pack gulp@4.0.0 2>&1 | grep "\.tgz$" | tail -1)
-        if [ -f "$PACK_FILE" ]; then
-            echo "   ✓ Fichier pack téléchargé: $PACK_FILE"
+        echo "   📦 Téléchargement du package gulp..."
+        PACK_OUTPUT=$(npm pack gulp@4.0.0 2>&1)
+        echo "$PACK_OUTPUT"
+        PACK_FILE=$(echo "$PACK_OUTPUT" | grep "\.tgz$" | tail -1 | xargs)
+        if [ -n "$PACK_FILE" ] && [ -f "$PACK_FILE" ]; then
+            echo "   ✓ Fichier pack trouvé: $PACK_FILE"
             echo "   📦 Extraction en cours..."
-            tar -xzf "$PACK_FILE" --strip-components=1 2>&1 | head -5 || {
+            tar -xzf "$PACK_FILE" --strip-components=1 2>&1 | head -10 || {
                 echo "   ⚠️ Erreur lors de l'extraction tar"
             }
             rm -f "$PACK_FILE"
             if [ -f "package.json" ]; then
                 echo "   ✓ Extraction réussie - package.json trouvé"
-                echo "   📄 Contenu du package:"
-                ls -la | head -10
             else
                 echo "   ✗ package.json introuvable après extraction"
             fi
         else
-            echo "   ✗ Fichier pack non trouvé: $PACK_FILE"
-            echo "   📋 Liste des fichiers tgz:"
-            ls -la *.tgz 2>/dev/null || echo "      (aucun fichier tgz)"
+            echo "   ✗ Fichier pack non trouvé ou invalide"
         fi
         cd "$OLDPWD" || cd - > /dev/null || true
     fi
     
-    # Vérifier après extraction manuelle et forcer la résolution
-    if [ -d "node_modules/gulp" ] && [ -f "node_modules/gulp/package.json" ]; then
-        echo "   ✅ Installation manuelle réussie!"
-        # Forcer la reconstruction du cache de modules Node.js
-        echo "   🔄 Reconstruction du cache de résolution..."
-        node -e "delete require.cache[require.resolve('module')]; console.log('Cache nettoyé')" 2>/dev/null || true
-        # Vérifier avec require.resolve
+    # Vérification finale avec retry
+    echo "   🔄 Vérification finale avec retry..."
+    for i in 1 2 3; do
         if node -e "require.resolve('gulp')" 2>/dev/null; then
-            echo "   ✅ Package résolu correctement après extraction"
+            echo "   ✅ gulp résolu avec succès (tentative $i)"
+            break
         else
-            echo "   ⚠️ Package installé mais ne peut pas être résolu - tentative de vérification directe..."
-            # Vérifier le chemin direct
-            if [ -f "node_modules/gulp/bin/gulp.js" ] || [ -f "node_modules/gulp/index.js" ]; then
-                echo "   ✓ Fichier principal trouvé, package devrait fonctionner"
+            if [ $i -lt 3 ]; then
+                echo "   ⏳ Attente avant retry ($i/3)..."
+                sleep 1
             else
-                echo "   ✗ Fichier principal non trouvé"
-                cat node_modules/gulp/package.json | grep -E '"main"|"module"|"exports"' | head -3 || true
+                echo "   ⚠️ gulp toujours non résolvable après toutes les tentatives"
+                # Dernière vérification : est-ce que le dossier existe ?
+                if [ -d "node_modules/gulp" ] && [ -f "node_modules/gulp/package.json" ]; then
+                    echo "   ✓ Dossier et package.json existent mais module non résolvable"
+                    echo "   📄 Contenu package.json:"
+                    cat node_modules/gulp/package.json | head -20
+                fi
             fi
         fi
-    fi
+    done
     
-    # Attendre un peu pour que npm termine
-    sleep 3
+    sleep 1
 else
     echo "✅ gulp déjà présent"
 fi
