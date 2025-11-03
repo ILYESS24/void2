@@ -37,10 +37,10 @@ else
 fi
 
 # Installer toutes les autres dépendances critiques nécessaires pour les fichiers de build
-echo "Installation des dépendances critiques pour les fichiers de build (typescript, workerpool, postcss, esbuild, event-stream, debounce, gulp-filter, gulp-rename, gulp-plumber, gulp-sourcemaps, gulp-replace, gulp-untar, gulp-gunzip, gulp-flatmap, gulp-json-editor, @vscode/gulp-electron, chromium-pickle-js, asar, rcedit, innosetup, merge-options, ternary-stream, lazy.js, source-map, gulp-sort, @vscode/l10n-dev, gulp-merge-json, xml2js, p-all)..."
-npm install typescript workerpool postcss@^8.4.33 esbuild event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 gulp-plumber gulp-sourcemaps gulp-replace@0.5.4 gulp-untar@0.0.7 gulp-gunzip@1.0.0 gulp-flatmap@1.0.2 gulp-json-editor@2.5.0 @vscode/gulp-electron@^1.36.0 chromium-pickle-js@^0.2.0 asar@^3.0.3 rcedit@^1.1.0 innosetup@^6.4.1 merge-options@^1.0.1 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 @vscode/l10n-dev gulp-merge-json xml2js p-all --legacy-peer-deps --save-prod --force --ignore-scripts || {
+echo "Installation des dépendances critiques pour les fichiers de build (typescript, workerpool, postcss, esbuild, event-stream, debounce, gulp-filter, gulp-rename, gulp-plumber, gulp-sourcemaps, gulp-replace, gulp-untar, gulp-gunzip, gulp-flatmap, gulp-json-editor, @vscode/gulp-electron, chromium-pickle-js, asar, rcedit, innosetup, merge-options, copy-webpack-plugin, ternary-stream, lazy.js, source-map, gulp-sort, @vscode/l10n-dev, gulp-merge-json, xml2js, p-all)..."
+npm install typescript workerpool postcss@^8.4.33 esbuild event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 gulp-plumber gulp-sourcemaps gulp-replace@0.5.4 gulp-untar@0.0.7 gulp-gunzip@1.0.0 gulp-flatmap@1.0.2 gulp-json-editor@2.5.0 @vscode/gulp-electron@^1.36.0 chromium-pickle-js@^0.2.0 asar@^3.0.3 rcedit@^1.1.0 innosetup@^6.4.1 merge-options@^1.0.1 copy-webpack-plugin@^11.0.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 @vscode/l10n-dev gulp-merge-json xml2js p-all --legacy-peer-deps --save-prod --force --ignore-scripts || {
     echo "⚠️ Installation des dépendances de build échouée, réessai sans --ignore-scripts pour certaines..."
-    npm install typescript workerpool postcss@^8.4.33 esbuild event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 gulp-plumber gulp-sourcemaps gulp-replace@0.5.4 gulp-untar@0.0.7 gulp-gunzip@1.0.0 gulp-flatmap@1.0.2 gulp-json-editor@2.5.0 @vscode/gulp-electron@^1.36.0 chromium-pickle-js@^0.2.0 asar@^3.0.3 rcedit@^1.1.0 innosetup@^6.4.1 merge-options@^1.0.1 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 @vscode/l10n-dev gulp-merge-json xml2js p-all --legacy-peer-deps --save-prod --force 2>&1 | tail -10
+    npm install typescript workerpool postcss@^8.4.33 esbuild event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 gulp-plumber gulp-sourcemaps gulp-replace@0.5.4 gulp-untar@0.0.7 gulp-gunzip@1.0.0 gulp-flatmap@1.0.2 gulp-json-editor@2.5.0 @vscode/gulp-electron@^1.36.0 chromium-pickle-js@^0.2.0 asar@^3.0.3 rcedit@^1.1.0 innosetup@^6.4.1 merge-options@^1.0.1 copy-webpack-plugin@^11.0.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 @vscode/l10n-dev gulp-merge-json xml2js p-all --legacy-peer-deps --save-prod --force 2>&1 | tail -10
 }
 
 # vscode-gulp-watch n'est pas disponible sur npm - créer un stub qui utilise gulp-watch
@@ -574,23 +574,29 @@ if [ ! -d "node_modules/webpack" ]; then
     npm install webpack webpack-cli --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || echo "⚠️ Installation webpack échouée"
 fi
 
-# Vérifier que merge-options est installé (critique pour shared.webpack.config.js)
-echo "🔍 Vérification de merge-options (critique pour compilation web)..."
-if [ ! -d "node_modules/merge-options" ] || ! node -e "require.resolve('merge-options')" 2>/dev/null; then
-    echo "⚠️ merge-options non trouvé ou non résolvable, installation..."
-    npm install merge-options@^1.0.1 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || echo "⚠️ Installation merge-options échouée"
-    # Vérifier à nouveau après installation
-    if node -e "require.resolve('merge-options')" 2>/dev/null; then
-        echo "✅ merge-options résolu après installation"
+# Vérifier que merge-options et copy-webpack-plugin sont installés (critiques pour shared.webpack.config.js)
+echo "🔍 Vérification des dépendances webpack (critique pour compilation web)..."
+for pkg in merge-options copy-webpack-plugin; do
+    if [ ! -d "node_modules/$pkg" ] || ! node -e "require.resolve('$pkg')" 2>/dev/null; then
+        echo "⚠️ $pkg non trouvé ou non résolvable, installation..."
+        if [ "$pkg" = "merge-options" ]; then
+            npm install merge-options@^1.0.1 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || echo "⚠️ Installation merge-options échouée"
+        elif [ "$pkg" = "copy-webpack-plugin" ]; then
+            npm install copy-webpack-plugin@^11.0.0 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || echo "⚠️ Installation copy-webpack-plugin échouée"
+        fi
+        # Vérifier à nouveau après installation
+        if node -e "require.resolve('$pkg')" 2>/dev/null; then
+            echo "✅ $pkg résolu après installation"
+        else
+            echo "❌ ERREUR: $pkg toujours non résolvable après installation"
+            echo "   📋 Contenu de node_modules/$pkg:"
+            ls -la node_modules/$pkg/ 2>/dev/null || echo "      (dossier n'existe pas)"
+            echo "   🛑 Le build va échouer - $pkg est requis pour compile-web"
+        fi
     else
-        echo "❌ ERREUR: merge-options toujours non résolvable après installation"
-        echo "   📋 Contenu de node_modules/merge-options:"
-        ls -la node_modules/merge-options/ 2>/dev/null || echo "      (dossier n'existe pas)"
-        echo "   🛑 Le build va échouer - merge-options est requis pour compile-web"
+        echo "✅ $pkg installé et résolvable"
     fi
-else
-    echo "✅ merge-options installé et résolvable"
-fi
+done
 
 # Essayer plusieurs méthodes
 if command -v gulp >/dev/null 2>&1; then
