@@ -37,10 +37,10 @@ else
 fi
 
 # Installer toutes les autres dépendances critiques nécessaires pour les fichiers de build
-echo "Installation des dépendances critiques pour les fichiers de build (event-stream, debounce, gulp-filter, gulp-rename, ternary-stream)..."
-npm install event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 ternary-stream@3.0.0 --legacy-peer-deps --save-prod --force --ignore-scripts || {
+echo "Installation des dépendances critiques pour les fichiers de build (event-stream, debounce, gulp-filter, gulp-rename, ternary-stream, lazy.js, source-map, gulp-sort)..."
+npm install event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 --legacy-peer-deps --save-prod --force --ignore-scripts || {
     echo "⚠️ Installation des dépendances de build échouée, réessai sans --ignore-scripts pour certaines..."
-    npm install event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 ternary-stream@3.0.0 --legacy-peer-deps --save-prod --force 2>&1 | tail -10
+    npm install event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 --legacy-peer-deps --save-prod --force 2>&1 | tail -10
 }
 
 # Vérifier que debounce est résolvable (nécessaire pour build/lib/util.js)
