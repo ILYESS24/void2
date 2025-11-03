@@ -86,31 +86,34 @@ const CRITICAL_DEPS = [
 ];
 
 // Vérifier et installer toutes les dépendances critiques
+console.log(`📋 Liste des dépendances à vérifier: ${CRITICAL_DEPS.join(', ')}`);
 for (const dep of CRITICAL_DEPS) {
 	try {
-		require.resolve(dep);
-		console.log(`✅ ${dep} déjà présent`);
+		const location = require.resolve(dep);
+		console.log(`✅ ${dep} déjà présent (${location})`);
 	} catch (error) {
-		console.log(`⚠️ ${dep} manquant, installation...`);
+		console.log(`⚠️ ${dep} manquant (erreur: ${error.message}), installation...`);
 		ensureDependency(dep);
-
+		
 		// Retry avec attente
 		let resolved = false;
 		for (let i = 0; i < 5; i++) {
 			try {
-				require.resolve(dep);
-				console.log(`✅ ${dep} trouvé après installation`);
+				const location = require.resolve(dep);
+				console.log(`✅ ${dep} trouvé après installation (${location})`);
 				resolved = true;
 				break;
 			} catch (err) {
 				if (i < 4) {
 					console.log(`⏳ Tentative ${i + 1}/5 pour ${dep}, attente...`);
 					execSync('sleep 1', { stdio: 'ignore' });
+				} else {
+					console.error(`❌ ${dep} toujours non résolvable après ${i + 1} tentatives: ${err.message}`);
 				}
 			}
 		}
 		if (!resolved) {
-			console.error(`❌ Impossible de résoudre ${dep} après installation`);
+			console.error(`❌ Impossible de résoudre ${dep} après installation - vérifier les logs ci-dessus`);
 		}
 	}
 }
