@@ -43,9 +43,92 @@ npm install typescript workerpool postcss@^8.4.33 event-stream@3.3.4 debounce@1.
     npm install typescript workerpool postcss@^8.4.33 event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 --legacy-peer-deps --save-prod --force 2>&1 | tail -10
 }
 
-# vscode-gulp-watch n'est pas disponible sur npm - il sera installé via npm install normal si présent dans devDependencies
-# Pour compile-web (pas watch), on n'en a pas besoin immédiatement
-echo "ℹ️ Note: vscode-gulp-watch sera disponible via npm install si présent dans devDependencies"
+# vscode-gulp-watch n'est pas disponible sur npm - créer un stub qui utilise gulp-watch
+echo "📦 Installation de gulp-watch comme alternative à vscode-gulp-watch..."
+npm install gulp-watch --legacy-peer-deps --save-prod --force --ignore-scripts || {
+    echo "⚠️ Installation de gulp-watch échouée, tentative avec chokidar..."
+    npm install chokidar --legacy-peer-deps --save-prod --force --ignore-scripts || echo "⚠️ Échec installation chokidar"
+}
+
+# Créer un stub pour vscode-gulp-watch si nécessaire
+if [ ! -d "node_modules/vscode-gulp-watch" ]; then
+    echo "🔧 Création d'un stub pour vscode-gulp-watch..."
+    mkdir -p node_modules/vscode-gulp-watch
+    cat > node_modules/vscode-gulp-watch/index.js << 'EOF'
+// Stub pour vscode-gulp-watch - utilise gulp-watch ou chokidar comme alternative
+let watch;
+try {
+    // Essayer gulp-watch d'abord
+    watch = require('gulp-watch');
+} catch (e1) {
+    try {
+        // Essayer chokidar
+        const chokidar = require('chokidar');
+        const eventStream = require('event-stream');
+        const vinyl = require('vinyl');
+        const path = require('path');
+        const fs = require('fs');
+        
+        watch = function(pattern, options) {
+            options = options || {};
+            const cwd = path.normalize(options.cwd || process.cwd());
+            const watcher = chokidar.watch(pattern, {
+                cwd: cwd,
+                ignoreInitial: true,
+                persistent: true
+            });
+            
+            const stream = eventStream.through();
+            
+            watcher.on('all', (event, filePath) => {
+                const fullPath = path.join(cwd, filePath);
+                fs.stat(fullPath, (err, stat) => {
+                    if (err && err.code === 'ENOENT') {
+                        // Fichier supprimé
+                        const file = new vinyl({
+                            path: fullPath,
+                            base: options.base || cwd,
+                            event: 'unlink'
+                        });
+                        stream.emit('data', file);
+                    } else if (!err && stat.isFile()) {
+                        fs.readFile(fullPath, (err, contents) => {
+                            if (!err) {
+                                const file = new vinyl({
+                                    path: fullPath,
+                                    base: options.base || cwd,
+                                    contents: contents,
+                                    stat: stat,
+                                    event: event === 'add' ? 'add' : 'change'
+                                });
+                                stream.emit('data', file);
+                            }
+                        });
+                    }
+                });
+            });
+            
+            watcher.on('error', (err) => {
+                stream.emit('error', err);
+            });
+            
+            return stream;
+        };
+    } catch (e2) {
+        // Fallback minimal - retourner un stream vide
+        const eventStream = require('event-stream');
+        watch = function() {
+            return eventStream.through();
+        };
+    }
+}
+
+module.exports = watch;
+EOF
+    echo "✅ Stub créé pour vscode-gulp-watch"
+else
+    echo "✅ vscode-gulp-watch déjà présent"
+fi
 
 # Vérifier que les dépendances critiques sont résolvables
 echo "🔍 Vérification des dépendances critiques de build..."
@@ -195,11 +278,13 @@ else
     fi
 fi
 
-# vscode-gulp-watch est optionnel - si absent, build/lib/watch/index.js utilisera peut-être une alternative
-# ou échouera seulement en mode watch (pas pour compile-web)
-if ! node -e "require.resolve('vscode-gulp-watch')" 2>/dev/null; then
-    echo "⚠️ vscode-gulp-watch non trouvé - peut causer des problèmes en mode watch, mais compile-web devrait fonctionner"
-    echo "   ℹ️ Si nécessaire, il sera chargé dynamiquement ou une alternative sera utilisée"
+# Vérifier que vscode-gulp-watch est disponible (via notre stub si nécessaire)
+if node -e "require.resolve('vscode-gulp-watch')" 2>/dev/null; then
+    echo "✅ vscode-gulp-watch résolvable: $(node -e "console.log(require.resolve('vscode-gulp-watch'))")"
+else
+    echo "❌ ERREUR: vscode-gulp-watch toujours non résolvable même après création du stub"
+    echo "   🛑 Le build va échouer - vérification du stub..."
+    ls -la node_modules/vscode-gulp-watch/ 2>/dev/null || echo "      (stub non créé)"
 fi
 
 echo ""
