@@ -37,10 +37,10 @@ else
 fi
 
 # Installer toutes les autres dépendances critiques nécessaires pour les fichiers de build
-echo "Installation des dépendances critiques pour les fichiers de build (typescript, workerpool, postcss, event-stream, debounce, gulp-filter, gulp-rename, gulp-plumber, ternary-stream, lazy.js, source-map, gulp-sort, @vscode/l10n-dev, gulp-merge-json, xml2js)..."
-npm install typescript workerpool postcss@^8.4.33 event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 gulp-plumber ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 @vscode/l10n-dev gulp-merge-json xml2js --legacy-peer-deps --save-prod --force --ignore-scripts || {
+echo "Installation des dépendances critiques pour les fichiers de build (typescript, workerpool, postcss, event-stream, debounce, gulp-filter, gulp-rename, gulp-plumber, ternary-stream, lazy.js, source-map, gulp-sort, @vscode/l10n-dev, gulp-merge-json, xml2js, p-all)..."
+npm install typescript workerpool postcss@^8.4.33 event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 gulp-plumber ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 @vscode/l10n-dev gulp-merge-json xml2js p-all --legacy-peer-deps --save-prod --force --ignore-scripts || {
     echo "⚠️ Installation des dépendances de build échouée, réessai sans --ignore-scripts pour certaines..."
-    npm install typescript workerpool postcss@^8.4.33 event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 gulp-plumber ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 @vscode/l10n-dev gulp-merge-json xml2js --legacy-peer-deps --save-prod --force 2>&1 | tail -10
+    npm install typescript workerpool postcss@^8.4.33 event-stream@3.3.4 debounce@1.2.1 gulp-filter@5.1.0 gulp-rename@1.2.0 gulp-plumber ternary-stream@3.0.0 lazy.js@0.5.1 source-map@0.7.4 gulp-sort@2.0.0 @vscode/l10n-dev gulp-merge-json xml2js p-all --legacy-peer-deps --save-prod --force 2>&1 | tail -10
 }
 
 # vscode-gulp-watch n'est pas disponible sur npm - créer un stub qui utilise gulp-watch
@@ -424,7 +424,7 @@ try {
         const vinyl = require('vinyl');
         const path = require('path');
         const fs = require('fs');
-        
+
         watch = function(pattern, options) {
             options = options || {};
             const cwd = path.normalize(options.cwd || process.cwd());
@@ -433,9 +433,9 @@ try {
                 ignoreInitial: true,
                 persistent: true
             });
-            
+
             const stream = eventStream.through();
-            
+
             watcher.on('all', (event, filePath) => {
                 const fullPath = path.join(cwd, filePath);
                 fs.stat(fullPath, (err, stat) => {
@@ -463,11 +463,11 @@ try {
                     }
                 });
             });
-            
+
             watcher.on('error', (err) => {
                 stream.emit('error', err);
             });
-            
+
             return stream;
         };
     } catch (e2) {
@@ -494,11 +494,32 @@ else
     exit 1
 fi
 
+# Fonction pour s'assurer que vscode-gulp-watch existe avant chaque commande gulp
+ensure_vscode_gulp_watch() {
+    if [ ! -f "node_modules/vscode-gulp-watch/index.js" ] || ! node -e "require.resolve('vscode-gulp-watch')" 2>/dev/null; then
+        echo "🔧 Recréation de vscode-gulp-watch avant commande gulp..."
+        rm -rf node_modules/vscode-gulp-watch 2>/dev/null || true
+        mkdir -p node_modules/vscode-gulp-watch
+        cat > node_modules/vscode-gulp-watch/package.json << 'PKGEOF'
+{
+  "name": "vscode-gulp-watch",
+  "version": "1.0.0",
+  "main": "index.js"
+}
+PKGEOF
+        cat > node_modules/vscode-gulp-watch/index.js << 'EOF'
+module.exports = require('gulp-watch') || require('chokidar').watch || function() { return require('event-stream').through(); };
+EOF
+    fi
+}
+
 echo ""
 echo "🔨 Compilation des extensions TypeScript d'abord..."
+ensure_vscode_gulp_watch
 # Compiler les extensions TypeScript avant de compiler le web
 if command -v gulp >/dev/null 2>&1; then
     echo "Utilisation de gulp CLI global pour transpile-extensions"
+    ensure_vscode_gulp_watch
     gulp transpile-extensions || {
         echo "⚠️ transpile-extensions échoué, tentative avec compile-extensions..."
         gulp compile-extensions || echo "⚠️ compile-extensions aussi échoué, continuation..."
@@ -528,24 +549,28 @@ fi
 # Essayer plusieurs méthodes
 if command -v gulp >/dev/null 2>&1; then
     echo "Utilisation de gulp CLI global pour compile-web"
+    ensure_vscode_gulp_watch
     gulp compile-web || {
         echo "⚠️ gulp compile-web échoué, vérification des erreurs..."
         exit 1
     }
 elif [ -f "node_modules/.bin/gulp" ]; then
     echo "Utilisation de node_modules/.bin/gulp pour compile-web"
+    ensure_vscode_gulp_watch
     node_modules/.bin/gulp compile-web || {
         echo "⚠️ gulp compile-web échoué, vérification des erreurs..."
         exit 1
     }
 elif [ -f "node_modules/gulp/bin/gulp.js" ]; then
     echo "Utilisation de node_modules/gulp/bin/gulp.js pour compile-web"
+    ensure_vscode_gulp_watch
     node node_modules/gulp/bin/gulp.js compile-web || {
         echo "⚠️ gulp compile-web échoué, vérification des erreurs..."
         exit 1
     }
 else
     echo "Utilisation de npx gulp pour compile-web"
+    ensure_vscode_gulp_watch
     npx --yes gulp compile-web || {
         echo "⚠️ gulp compile-web échoué, vérification des erreurs..."
         exit 1
