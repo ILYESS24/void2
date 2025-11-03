@@ -111,7 +111,30 @@ else
 fi
 
 echo ""
-echo "🚀 Compilation web..."
+echo "🔨 Compilation des extensions TypeScript d'abord..."
+# Compiler les extensions TypeScript avant de compiler le web
+if command -v gulp >/dev/null 2>&1; then
+    echo "Utilisation de gulp CLI global pour transpile-extensions"
+    gulp transpile-extensions || {
+        echo "⚠️ transpile-extensions échoué, tentative avec compile-extensions..."
+        gulp compile-extensions || echo "⚠️ compile-extensions aussi échoué, continuation..."
+    }
+elif [ -f "node_modules/.bin/gulp" ]; then
+    echo "Utilisation de gulp local pour transpile-extensions"
+    npx gulp transpile-extensions || {
+        echo "⚠️ transpile-extensions échoué, tentative avec compile-extensions..."
+        npx gulp compile-extensions || echo "⚠️ compile-extensions aussi échoué, continuation..."
+    }
+else
+    echo "⚠️ gulp non trouvé, tentative avec node directement..."
+    node node_modules/gulp/bin/gulp.js transpile-extensions || {
+        echo "⚠️ transpile-extensions échoué, tentative avec compile-extensions..."
+        node node_modules/gulp/bin/gulp.js compile-extensions || echo "⚠️ compile-extensions aussi échoué, continuation..."
+    }
+fi
+
+echo ""
+echo "🚀 Compilation web (extensions web)..."
 # Essayer plusieurs méthodes
 if command -v gulp >/dev/null 2>&1; then
     echo "Utilisation de gulp CLI global"
