@@ -202,7 +202,7 @@ if ! node -e "require.resolve('gulp')" 2>/dev/null; then
             done
         fi
     fi
-    
+
     # Vérification finale avec retry
     echo "   🔄 Vérification finale avec retry..."
     for i in 1 2 3; do
@@ -258,6 +258,39 @@ else
     echo "✅ glob déjà présent"
 fi
 
+echo "Vérification de vinyl..."
+if ! node -e "require.resolve('vinyl')" 2>/dev/null; then
+    echo "⚠️ vinyl manquant, installation..."
+    npm install vinyl@2.2.1 --legacy-peer-deps --no-save --force --ignore-scripts || {
+        echo "⚠️ Installation avec erreurs, mais on continue..."
+    }
+    sleep 2
+else
+    echo "✅ vinyl déjà présent"
+fi
+
+echo "Vérification de through2..."
+if ! node -e "require.resolve('through2')" 2>/dev/null; then
+    echo "⚠️ through2 manquant, installation..."
+    npm install through2@4.0.2 --legacy-peer-deps --no-save --force --ignore-scripts || {
+        echo "⚠️ Installation avec erreurs, mais on continue..."
+    }
+    sleep 2
+else
+    echo "✅ through2 déjà présent"
+fi
+
+echo "Vérification de pump..."
+if ! node -e "require.resolve('pump')" 2>/dev/null; then
+    echo "⚠️ pump manquant, installation..."
+    npm install pump@3.0.3 --legacy-peer-deps --no-save --force --ignore-scripts || {
+        echo "⚠️ Installation avec erreurs, mais on continue..."
+    }
+    sleep 2
+else
+    echo "✅ pump déjà présent"
+fi
+
 # Vérification finale avec require.resolve (plus fiable que vérifier le dossier)
 echo ""
 echo "✅ Vérification finale des dépendances critiques:"
@@ -295,6 +328,24 @@ if node -e "require.resolve('glob')" 2>/dev/null; then
     echo "  ✓ glob (résolu: $(node -e "console.log(require.resolve('glob'))"))"
 else
     echo "  ✗ glob MANQUANT (ne peut pas être résolu)"
+fi
+
+if node -e "require.resolve('vinyl')" 2>/dev/null; then
+    echo "  ✓ vinyl (résolu: $(node -e "console.log(require.resolve('vinyl'))"))"
+else
+    echo "  ✗ vinyl MANQUANT (ne peut pas être résolu)"
+fi
+
+if node -e "require.resolve('through2')" 2>/dev/null; then
+    echo "  ✓ through2 (résolu: $(node -e "console.log(require.resolve('through2'))"))"
+else
+    echo "  ✗ through2 MANQUANT (ne peut pas être résolu)"
+fi
+
+if node -e "require.resolve('pump')" 2>/dev/null; then
+    echo "  ✓ pump (résolu: $(node -e "console.log(require.resolve('pump'))"))"
+else
+    echo "  ✗ pump MANQUANT (ne peut pas être résolu)"
 fi
 
 # Démarrer le serveur
