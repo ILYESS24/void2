@@ -93,11 +93,10 @@ fi
 echo "Vérification de rimraf..."
 if ! node -e "require.resolve('rimraf')" 2>/dev/null; then
     echo "⚠️ rimraf manquant, installation..."
-    npm install rimraf --legacy-peer-deps --no-save --force --ignore-scripts || {
+    npm install rimraf --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || {
         echo "⚠️ Installation avec erreurs, mais on continue..."
     }
-    # Attendre un peu pour que npm termine
-    sleep 2
+    sleep 1
 else
     echo "✅ rimraf déjà présent"
 fi
@@ -105,7 +104,7 @@ fi
 echo "Vérification de event-stream..."
 if ! node -e "require.resolve('event-stream')" 2>/dev/null; then
     echo "⚠️ event-stream manquant, installation..."
-    npm install event-stream@3.3.4 --legacy-peer-deps --no-save --force --ignore-scripts || {
+    npm install event-stream@3.3.4 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || {
         echo "⚠️ Installation avec erreurs, mais on continue..."
     }
     # Attendre un peu pour que npm termine
@@ -126,7 +125,7 @@ if ! node -e "require.resolve('gulp')" 2>/dev/null; then
 
     # Essayer d'abord l'installation npm normale
     echo "   📦 Tentative d'installation npm normale..."
-    npm install gulp@4.0.0 --legacy-peer-deps --force --ignore-scripts --save-dev 2>&1 | tail -20 || true
+    npm install gulp@4.0.0 --legacy-peer-deps --force --ignore-scripts --save-prod 2>&1 | tail -20 || true
 
     # Vérifier si installé après
     echo "   🔍 Vérification post-installation npm..."
@@ -249,11 +248,10 @@ fi
 echo "Vérification de glob..."
 if ! node -e "require.resolve('glob')" 2>/dev/null; then
     echo "⚠️ glob manquant, installation..."
-    npm install glob@5.0.13 --legacy-peer-deps --no-save --force --ignore-scripts || {
+    npm install glob@5.0.13 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || {
         echo "⚠️ Installation avec erreurs, mais on continue..."
     }
-    # Attendre un peu pour que npm termine
-    sleep 2
+    sleep 1
 else
     echo "✅ glob déjà présent"
 fi
@@ -261,10 +259,10 @@ fi
 echo "Vérification de vinyl..."
 if ! node -e "require.resolve('vinyl')" 2>/dev/null; then
     echo "⚠️ vinyl manquant, installation..."
-    npm install vinyl@2.2.1 --legacy-peer-deps --no-save --force --ignore-scripts || {
+    npm install vinyl@2.2.1 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || {
         echo "⚠️ Installation avec erreurs, mais on continue..."
     }
-    sleep 2
+    sleep 1
 else
     echo "✅ vinyl déjà présent"
 fi
@@ -272,10 +270,10 @@ fi
 echo "Vérification de through2..."
 if ! node -e "require.resolve('through2')" 2>/dev/null; then
     echo "⚠️ through2 manquant, installation..."
-    npm install through2@4.0.2 --legacy-peer-deps --no-save --force --ignore-scripts || {
+    npm install through2@4.0.2 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || {
         echo "⚠️ Installation avec erreurs, mais on continue..."
     }
-    sleep 2
+    sleep 1
 else
     echo "✅ through2 déjà présent"
 fi
@@ -283,10 +281,10 @@ fi
 echo "Vérification de pump..."
 if ! node -e "require.resolve('pump')" 2>/dev/null; then
     echo "⚠️ pump manquant, installation..."
-    npm install pump@3.0.3 --legacy-peer-deps --no-save --force --ignore-scripts || {
+    npm install pump@3.0.3 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || {
         echo "⚠️ Installation avec erreurs, mais on continue..."
     }
-    sleep 2
+    sleep 1
 else
     echo "✅ pump déjà présent"
 fi
@@ -294,10 +292,10 @@ fi
 echo "Vérification de debounce..."
 if ! node -e "require.resolve('debounce')" 2>/dev/null; then
     echo "⚠️ debounce manquant, installation..."
-    npm install debounce@1.2.1 --legacy-peer-deps --no-save --force --ignore-scripts || {
+    npm install debounce@1.2.1 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || {
         echo "⚠️ Installation avec erreurs, mais on continue..."
     }
-    sleep 2
+    sleep 1
 else
     echo "✅ debounce déjà présent"
 fi
@@ -305,10 +303,10 @@ fi
 echo "Vérification de gulp-filter..."
 if ! node -e "require.resolve('gulp-filter')" 2>/dev/null; then
     echo "⚠️ gulp-filter manquant, installation..."
-    npm install gulp-filter@5.1.0 --legacy-peer-deps --no-save --force --ignore-scripts || {
+    npm install gulp-filter@5.1.0 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || {
         echo "⚠️ Installation avec erreurs, mais on continue..."
     }
-    sleep 2
+    sleep 1
 else
     echo "✅ gulp-filter déjà présent"
 fi
@@ -316,10 +314,10 @@ fi
 echo "Vérification de gulp-buffer..."
 if ! node -e "require.resolve('gulp-buffer')" 2>/dev/null; then
     echo "⚠️ gulp-buffer manquant, installation..."
-    npm install gulp-buffer@0.0.2 --legacy-peer-deps --no-save --force --ignore-scripts || {
+    npm install gulp-buffer@0.0.2 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || {
         echo "⚠️ Installation avec erreurs, mais on continue..."
     }
-    sleep 2
+    sleep 1
 else
     echo "✅ gulp-buffer déjà présent"
 fi
@@ -327,10 +325,10 @@ fi
 echo "Vérification de ternary-stream..."
 if ! node -e "require.resolve('ternary-stream')" 2>/dev/null; then
     echo "⚠️ ternary-stream manquant, installation..."
-    npm install ternary-stream@3.0.0 --legacy-peer-deps --no-save --force --ignore-scripts || {
+    npm install ternary-stream@3.0.0 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || {
         echo "⚠️ Installation avec erreurs, mais on continue..."
     }
-    sleep 2
+    sleep 1
 else
     echo "✅ ternary-stream déjà présent"
 fi
@@ -338,10 +336,10 @@ fi
 echo "Vérification de gulp-vinyl-zip..."
 if ! node -e "require.resolve('gulp-vinyl-zip')" 2>/dev/null; then
     echo "⚠️ gulp-vinyl-zip manquant, installation..."
-    npm install gulp-vinyl-zip@2.0.3 --legacy-peer-deps --no-save --force --ignore-scripts || {
+    npm install gulp-vinyl-zip@2.0.3 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -10 || {
         echo "⚠️ Installation avec erreurs, mais on continue..."
     }
-    sleep 2
+    sleep 1
 else
     echo "✅ gulp-vinyl-zip déjà présent"
 fi
