@@ -335,6 +335,17 @@ else
     echo "✅ ternary-stream déjà présent"
 fi
 
+echo "Vérification de gulp-vinyl-zip..."
+if ! node -e "require.resolve('gulp-vinyl-zip')" 2>/dev/null; then
+    echo "⚠️ gulp-vinyl-zip manquant, installation..."
+    npm install gulp-vinyl-zip@2.0.3 --legacy-peer-deps --no-save --force --ignore-scripts || {
+        echo "⚠️ Installation avec erreurs, mais on continue..."
+    }
+    sleep 2
+else
+    echo "✅ gulp-vinyl-zip déjà présent"
+fi
+
 # Vérification finale avec require.resolve (plus fiable que vérifier le dossier)
 echo ""
 echo "✅ Vérification finale des dépendances critiques:"
@@ -414,6 +425,12 @@ if node -e "require.resolve('ternary-stream')" 2>/dev/null; then
     echo "  ✓ ternary-stream (résolu: $(node -e "console.log(require.resolve('ternary-stream'))"))"
 else
     echo "  ✗ ternary-stream MANQUANT (ne peut pas être résolu)"
+fi
+
+if node -e "require.resolve('gulp-vinyl-zip')" 2>/dev/null; then
+    echo "  ✓ gulp-vinyl-zip (résolu: $(node -e "console.log(require.resolve('gulp-vinyl-zip'))"))"
+else
+    echo "  ✗ gulp-vinyl-zip MANQUANT (ne peut pas être résolu)"
 fi
 
 # Démarrer le serveur

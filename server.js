@@ -82,7 +82,8 @@ const CRITICAL_DEPS = [
 	'fancy-log',
 	'ansi-colors',
 	'debounce',
-	'ternary-stream'
+	'ternary-stream',
+	'gulp-vinyl-zip'
 ];
 
 // Vérifier et installer toutes les dépendances critiques
@@ -94,7 +95,7 @@ for (const dep of CRITICAL_DEPS) {
 	} catch (error) {
 		console.log(`⚠️ ${dep} manquant (erreur: ${error.message}), installation...`);
 		ensureDependency(dep);
-		
+
 		// Retry avec attente
 		let resolved = false;
 		for (let i = 0; i < 5; i++) {
