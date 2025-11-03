@@ -638,7 +638,10 @@ compile_web_with_capture() {
     if [ $EXIT_CODE -eq 0 ]; then
         COMPILE_WEB_SUCCESS=true
         echo "✅ compile-web réussi via $method"
-        echo "$OUTPUT" | tail -20
+        echo "$OUTPUT" | tail -30
+        echo ""
+        echo "📋 Vérification rapide des fichiers générés..."
+        find extensions -name "*.js" -path "*/dist/browser/*.js" 2>/dev/null | wc -l | xargs echo "   Fichiers .js trouvés:"
         return 0
     else
         COMPILE_WEB_ERROR="$OUTPUT"
@@ -692,31 +695,39 @@ fi
 echo ""
 echo "🔍 Vérification de la compilation des extensions..."
 EXT_COUNT=0
-if [ -f "extensions/configuration-editing/dist/browser/configurationEditingMain.js" ]; then
-    echo "✅ configuration-editing compilée"
-    EXT_COUNT=$((EXT_COUNT+1))
-else
-    echo "⚠️ configuration-editing NON compilée"
-    echo "   📂 Vérification du dossier:"
-    ls -la extensions/configuration-editing/dist/browser/ 2>/dev/null || echo "   ❌ Dossier dist/browser n'existe pas"
-fi
+EXTENSIONS_TO_CHECK=(
+    "extensions/configuration-editing/dist/browser/configurationEditingMain.js"
+    "extensions/css-language-features/client/dist/browser/cssClientMain.js"
+    "extensions/git-base/dist/browser/extension.js"
+    "extensions/html-language-features/client/dist/browser/htmlClientMain.js"
+    "extensions/json-language-features/client/dist/browser/jsonClientMain.js"
+    "extensions/markdown-language-features/dist/browser/extension.js"
+    "extensions/typescript-language-features/dist/browser/extension.js"
+    "extensions/emmet/dist/browser/emmetBrowserMain.js"
+)
 
-if [ -f "extensions/css-language-features/client/dist/browser/cssClientMain.js" ]; then
-    echo "✅ css-language-features compilée"
-    EXT_COUNT=$((EXT_COUNT+1))
-else
-    echo "⚠️ css-language-features NON compilée"
-fi
+for ext_file in "${EXTENSIONS_TO_CHECK[@]}"; do
+    if [ -f "$ext_file" ]; then
+        # Extraire le nom de l'extension depuis le chemin
+        ext_name=$(echo "$ext_file" | sed 's|extensions/||' | sed 's|/.*||')
+        echo "✅ $ext_name compilée"
+        EXT_COUNT=$((EXT_COUNT+1))
+    else
+        ext_name=$(echo "$ext_file" | sed 's|extensions/||' | sed 's|/.*||')
+        echo "⚠️ $ext_name NON compilée: $ext_file"
+    fi
+done
 
-if [ -f "extensions/git-base/dist/browser/extension.js" ]; then
-    echo "✅ git-base compilée"
-    EXT_COUNT=$((EXT_COUNT+1))
-else
-    echo "⚠️ git-base NON compilée"
-fi
+# Compter tous les fichiers compilés
+TOTAL_JS_FILES=$(find extensions -name "*.js" -path "*/dist/browser/*.js" 2>/dev/null | wc -l)
+echo ""
+echo "📊 Statistiques:"
+echo "   Extensions vérifiées: ${#EXTENSIONS_TO_CHECK[@]}"
+echo "   Extensions trouvées: $EXT_COUNT"
+echo "   Total fichiers .js dans dist/browser: $TOTAL_JS_FILES"
 
 echo ""
-if [ $EXT_COUNT -eq 0 ]; then
+if [ $EXT_COUNT -eq 0 ] && [ $TOTAL_JS_FILES -eq 0 ]; then
     echo "❌ ERREUR CRITIQUE: AUCUNE extension n'a été compilée !"
     echo "📋 Liste des fichiers webpack config trouvés:"
     find extensions -name "extension-browser.webpack.config.js" 2>/dev/null | head -10 || echo "   ⚠️ Aucun fichier webpack config trouvé"
