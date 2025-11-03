@@ -163,6 +163,27 @@ else
     exit 1
 fi
 
+# Vérification CRITIQUE de postcss juste avant l'exécution de gulp
+echo ""
+echo "🔍 Vérification finale de postcss (critique pour build/lib/postcss.js)..."
+if node -e "require.resolve('postcss')" 2>/dev/null; then
+    echo "✅ postcss résolvable: $(node -e "console.log(require.resolve('postcss'))")"
+else
+    echo "❌ ERREUR: postcss non résolvable avant exécution de gulp !"
+    echo "   📋 Contenu de node_modules/postcss:"
+    ls -la node_modules/postcss/ 2>/dev/null || echo "      (dossier n'existe pas)"
+    echo "   🔄 Installation d'urgence de postcss..."
+    npm install postcss@^8.4.33 --legacy-peer-deps --save-prod --force --ignore-scripts 2>&1 | tail -20
+    # Vérifier à nouveau
+    if node -e "require.resolve('postcss')" 2>/dev/null; then
+        echo "✅ postcss résolu après installation d'urgence"
+    else
+        echo "❌ ERREUR CRITIQUE: postcss toujours non résolvable après installation d'urgence"
+        echo "   🛑 Le build va échouer - postcss est requis pour build/lib/postcss.js"
+        exit 1
+    fi
+fi
+
 echo ""
 echo "🔨 Compilation des extensions TypeScript d'abord..."
 # Compiler les extensions TypeScript avant de compiler le web
