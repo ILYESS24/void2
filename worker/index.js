@@ -76,39 +76,64 @@ async function handleWebSocket(request, backendUrl) {
 }
 
 /**
- * Proxy les requêtes API vers le backend
+ * Proxy les requêtes vers le backend (reverse proxy transparent)
  */
 async function proxyToBackend(request, backendUrl, pathname) {
 	try {
 		const backendUrlObj = new URL(backendUrl);
-		const targetUrl = new URL(pathname, backendUrl);
+		// Construire l'URL complète du backend
+		const targetUrl = new URL(pathname + (new URL(request.url).search || ''), backendUrl);
 
-		// Copier les headers
+		// Copier les headers mais modifier ceux nécessaires
 		const headers = new Headers(request.headers);
+		
+		// Ne pas transférer le Host original (le backend verra le worker comme client)
+		headers.delete('Host');
 		headers.set('Host', backendUrlObj.host);
-		// Ajouter CORS headers pour le proxy
-		headers.set('Origin', backendUrlObj.origin);
+		
+		// Préserver l'origine pour les requêtes CORS si nécessaire
+		const origin = request.headers.get('Origin');
+		if (origin) {
+			headers.set('Origin', origin);
+		} else {
+			headers.set('Origin', backendUrlObj.origin);
+		}
 
+		// Forward le X-Forwarded-* headers pour le backend
+		const forwardedHost = new URL(request.url).host;
+		headers.set('X-Forwarded-Host', forwardedHost);
+		headers.set('X-Forwarded-Proto', new URL(request.url).protocol.slice(0, -1));
+		headers.set('X-Forwarded-For', request.headers.get('CF-Connecting-IP') || 'unknown');
+
+		// Faire la requête vers le backend
 		const response = await fetch(targetUrl.toString(), {
 			method: request.method,
 			headers: headers,
 			body: request.method !== 'GET' && request.method !== 'HEAD' ? request.body : null,
 		});
 
-		// Créer une nouvelle réponse avec CORS headers
+		// Créer une nouvelle réponse en préservant les headers du backend
+		const newHeaders = new Headers(response.headers);
+		
+		// Ajouter/modifier les headers CORS pour que tout fonctionne depuis la même origine
+		newHeaders.set('Access-Control-Allow-Origin', '*');
+		newHeaders.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+		newHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+		newHeaders.set('Access-Control-Allow-Credentials', 'true');
+		
+		// Supprimer les headers qui pourraient causer des problèmes
+		newHeaders.delete('X-Frame-Options');
+		newHeaders.delete('Content-Security-Policy');
+
 		const newResponse = new Response(response.body, {
 			status: response.status,
 			statusText: response.statusText,
-			headers: response.headers,
+			headers: newHeaders,
 		});
-
-		// Ajouter CORS headers
-		newResponse.headers.set('Access-Control-Allow-Origin', '*');
-		newResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-		newResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
 		return newResponse;
 	} catch (error) {
+		console.error('Proxy error:', error);
 		return new Response(`Proxy error: ${error.message}`, {
 			status: 502,
 			headers: {
@@ -139,22 +164,29 @@ export default {
 			});
 		}
 
-		// Routes API et WebSocket → proxy vers le backend
-		if (pathname.startsWith('/api/') ||
-			pathname.startsWith('/vscode-remote-resource') ||
-			pathname.startsWith('/callback') ||
-			request.headers.get('Upgrade') === 'websocket') {
-			const backendUrl = env.BACKEND_URL || BACKEND_URL;
-			if (backendUrl && backendUrl !== 'BACKEND_URL') {
-				if (request.headers.get('Upgrade') === 'websocket') {
-					return handleWebSocket(request, backendUrl);
-				}
+		// Routes API, WebSocket et toutes les autres requêtes non-statiques → proxy vers le backend
+		// Si ce n'est pas un fichier statique, on proxy vers le backend
+		const backendUrl = env.BACKEND_URL || BACKEND_URL;
+		
+		if (backendUrl && backendUrl !== 'BACKEND_URL') {
+			// WebSocket upgrade
+			if (request.headers.get('Upgrade') === 'websocket') {
+				return handleWebSocket(request, backendUrl);
+			}
+			
+			// Routes backend spécifiques (API, extensions, etc.)
+			if (pathname.startsWith('/api/') ||
+				pathname.startsWith('/vscode-remote-resource') ||
+				pathname.startsWith('/callback') ||
+				pathname.startsWith('/static') ||
+				pathname.startsWith('/extension') ||
+				pathname.startsWith('/_') ||
+				pathname.includes('.json') && !pathname.startsWith('/out/') && !pathname.startsWith('/extensions/')) {
 				return proxyToBackend(request, backendUrl, pathname);
 			}
-			return new Response('Backend URL not configured', { status: 503 });
 		}
 
-		// Routes statiques → servir depuis KV ou assets
+		// Routes statiques → servir depuis KV ou proxy vers backend
 		if (isStaticPath(pathname) || pathname === '/' || pathname === '/index.html') {
 			// Essayer de charger depuis KV Storage (si configuré)
 			if (env.STATIC_ASSETS) {
@@ -165,12 +197,18 @@ export default {
 						headers: {
 							'Content-Type': getMimeType(key),
 							'Cache-Control': 'public, max-age=31536000',
+							'Access-Control-Allow-Origin': '*',
 						},
 					});
 				}
 			}
 
-			// Fallback: servir depuis le workbench HTML
+			// Si pas dans KV et backend disponible, proxy vers backend pour les fichiers statiques
+			if (backendUrl && backendUrl !== 'BACKEND_URL') {
+				return proxyToBackend(request, backendUrl, pathname);
+			}
+
+			// Fallback: servir depuis le workbench HTML généré
 			if (pathname === '/' || pathname === '/index.html') {
 				return new Response(getWorkbenchHTML(url.origin), {
 					headers: {
@@ -181,7 +219,12 @@ export default {
 				});
 			}
 
-			// Autres fichiers statiques - retourner 404 si pas dans KV
+			// Autres fichiers statiques - proxy vers backend si disponible
+			if (backendUrl && backendUrl !== 'BACKEND_URL') {
+				return proxyToBackend(request, backendUrl, pathname);
+			}
+
+			// Dernier recours: 404
 			return new Response('File not found', {
 				status: 404,
 				headers: {
@@ -191,7 +234,12 @@ export default {
 			});
 		}
 
-		// Route par défaut: servir le workbench
+		// Route par défaut: proxy vers backend si disponible, sinon servir le workbench
+		if (backendUrl && backendUrl !== 'BACKEND_URL') {
+			return proxyToBackend(request, backendUrl, pathname);
+		}
+
+		// Fallback: servir le workbench HTML généré
 		return new Response(getWorkbenchHTML(url.origin), {
 			headers: {
 				'Content-Type': 'text/html',
@@ -216,7 +264,7 @@ function getWorkbenchHTML(origin) {
 	<meta name="apple-mobile-web-app-capable" content="yes" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
 
-	<meta id="vscode-workbench-web-configuration" data-settings='{"remoteAuthority":"${origin}","webviewResourceRoot":"${baseUrl}","webviewCspSource":"${origin}","_wrapWebviewExtHostInIframe":true}'>
+	<meta id="vscode-workbench-web-configuration" data-settings='{"remoteAuthority":"${origin}","webviewResourceRoot":"${baseUrl}","webviewCspSource":"${origin}","_wrapWebviewExtHostInIframe":true,"serverBasePath":"${baseUrl}"}'>
 
 	<link rel="icon" href="${baseUrl}/resources/server/favicon.ico" type="image/x-icon" />
 	<link rel="stylesheet" href="${baseUrl}/out/vs/code/browser/workbench/workbench.css">
