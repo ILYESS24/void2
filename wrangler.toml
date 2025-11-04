@@ -4,10 +4,9 @@ compatibility_date = "2024-11-03"
 compatibility_flags = ["nodejs_compat"]
 
 # Variables d'environnement
-# Configurez BACKEND_URL avec l'URL de votre serveur backend (Render, Railway, etc.)
-# Exemple: BACKEND_URL = "https://votre-app.onrender.com"
+# TOUT EST SUR CLOUDFLARE - Plus besoin de backend externe
 [vars]
-BACKEND_URL = "https://void2-2.onrender.com"
+# BACKEND_URL n'est plus utilisé - tout est sur Cloudflare
 
 # KV Namespace pour les fichiers statiques
 [[kv_namespaces]]

@@ -164,25 +164,21 @@ export default {
 			});
 		}
 
-		// Récupérer l'URL du backend
-		const backendUrl = env.BACKEND_URL || BACKEND_URL;
+		// TOUT EST SUR CLOUDFLARE - Plus de proxy vers Render !
+		// Le worker sert directement les fichiers statiques depuis KV
 
-		// Si le backend est configuré, proxy TOUT vers le backend (reverse proxy complet)
-		if (backendUrl && backendUrl !== 'BACKEND_URL') {
-			// WebSocket upgrade
-			if (request.headers.get('Upgrade') === 'websocket') {
-				return handleWebSocket(request, backendUrl);
-			}
-
-			// Proxy TOUTES les requêtes vers le backend Render
-			// Le backend Render sert déjà le workbench HTML et tous les fichiers statiques
-			return proxyToBackend(request, backendUrl, pathname);
-		}
-
-		// Si pas de backend configuré, essayer de servir depuis KV
+		// Servir depuis KV Storage (fichiers statiques compilés)
 		if (env.STATIC_ASSETS) {
 			const key = pathname === '/' ? '/index.html' : pathname;
-			const asset = await env.STATIC_ASSETS.get(key);
+			
+			// Essayer la clé exacte
+			let asset = await env.STATIC_ASSETS.get(key);
+			
+			// Si pas trouvé et que c'est un fichier statique, essayer avec le chemin complet
+			if (!asset && isStaticPath(pathname)) {
+				asset = await env.STATIC_ASSETS.get(pathname);
+			}
+			
 			if (asset) {
 				return new Response(asset, {
 					headers: {
