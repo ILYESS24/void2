@@ -170,15 +170,15 @@ export default {
 		// Servir depuis KV Storage (fichiers statiques compilés)
 		if (env.STATIC_ASSETS) {
 			const key = pathname === '/' ? '/index.html' : pathname;
-			
+
 			// Essayer la clé exacte
 			let asset = await env.STATIC_ASSETS.get(key);
-			
+
 			// Si pas trouvé et que c'est un fichier statique, essayer avec le chemin complet
 			if (!asset && isStaticPath(pathname)) {
 				asset = await env.STATIC_ASSETS.get(pathname);
 			}
-			
+
 			if (asset) {
 				return new Response(asset, {
 					headers: {

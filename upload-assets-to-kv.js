@@ -1,9 +1,9 @@
 /**
  * Script pour uploader les fichiers statiques vers Cloudflare KV
- * 
+ *
  * Usage:
  *   node upload-assets-to-kv.js
- * 
+ *
  * Prérequis:
  *   1. Créer un KV namespace: wrangler kv:namespace create "STATIC_ASSETS"
  *   2. Ajouter l'ID dans wrangler.toml

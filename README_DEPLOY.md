@@ -67,7 +67,7 @@ npm run deploy:worker:simple
    ```
 
 2. **Configurer BACKEND_URL**
-   
+
    Éditez `wrangler.toml`:
    ```toml
    [vars]
@@ -83,10 +83,10 @@ npm run deploy:worker:simple
    ```bash
    # Créer le namespace KV
    npm run setup:kv
-   
+
    # Build les fichiers
    npm run build:cloudflare
-   
+
    # Upload vers KV
    npm run upload:kv
    ```

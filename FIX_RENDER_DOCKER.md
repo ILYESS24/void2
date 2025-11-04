@@ -31,7 +31,7 @@ error: failed to solve: failed to read dockerfile: open Dockerfile: no such file
 Si Render détecte automatiquement Docker, forcez l'utilisation de `render.yaml` :
 
 1. Dans **Settings** → **Build & Deploy**
-2. Cochez **"Use render.yaml"** 
+2. Cochez **"Use render.yaml"**
 3. Ou supprimez toute référence à Docker
 
 ---
