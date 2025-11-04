@@ -7,22 +7,21 @@ compatibility_flags = ["nodejs_compat"]
 # Configurez BACKEND_URL avec l'URL de votre serveur backend (Render, Railway, etc.)
 # Exemple: BACKEND_URL = "https://votre-app.onrender.com"
 [vars]
-BACKEND_URL = "https://votre-backend.onrender.com"
+BACKEND_URL = "https://void2-2.onrender.com"
 
-# KV Namespace pour les fichiers statiques (optionnel)
-# Créez un KV namespace dans Cloudflare Dashboard et ajoutez-le ici
-# [[kv_namespaces]]
-# binding = "STATIC_ASSETS"
-# id = "votre-kv-namespace-id"
+# KV Namespace pour les fichiers statiques
+[[kv_namespaces]]
+binding = "STATIC_ASSETS"
+id = "93e4f45e06854eb0a6cd17f42cec7cce"
 
 # Configuration pour les Workers
 [env.production]
 name = "void-code"
-vars = { BACKEND_URL = "https://votre-backend.onrender.com" }
+vars = { BACKEND_URL = "https://void2-2.onrender.com" }
 
 [env.staging]
 name = "void-code-staging"
-vars = { BACKEND_URL = "https://votre-backend-staging.onrender.com" }
+vars = { BACKEND_URL = "https://void2-2.onrender.com" }
 
 # Routes (si vous avez un domaine personnalisé)
 # [[routes]]
