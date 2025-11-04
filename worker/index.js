@@ -86,11 +86,11 @@ async function proxyToBackend(request, backendUrl, pathname) {
 
 		// Copier les headers mais modifier ceux nécessaires
 		const headers = new Headers(request.headers);
-		
+
 		// Ne pas transférer le Host original (le backend verra le worker comme client)
 		headers.delete('Host');
 		headers.set('Host', backendUrlObj.host);
-		
+
 		// Préserver l'origine pour les requêtes CORS si nécessaire
 		const origin = request.headers.get('Origin');
 		if (origin) {
@@ -114,13 +114,13 @@ async function proxyToBackend(request, backendUrl, pathname) {
 
 		// Créer une nouvelle réponse en préservant les headers du backend
 		const newHeaders = new Headers(response.headers);
-		
+
 		// Ajouter/modifier les headers CORS pour que tout fonctionne depuis la même origine
 		newHeaders.set('Access-Control-Allow-Origin', '*');
 		newHeaders.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
 		newHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
 		newHeaders.set('Access-Control-Allow-Credentials', 'true');
-		
+
 		// Supprimer les headers qui pourraient causer des problèmes
 		newHeaders.delete('X-Frame-Options');
 		newHeaders.delete('Content-Security-Policy');
@@ -164,86 +164,52 @@ export default {
 			});
 		}
 
-		// Routes API, WebSocket et toutes les autres requêtes non-statiques → proxy vers le backend
-		// Si ce n'est pas un fichier statique, on proxy vers le backend
+		// Récupérer l'URL du backend
 		const backendUrl = env.BACKEND_URL || BACKEND_URL;
-		
+
+		// Si le backend est configuré, proxy TOUT vers le backend (reverse proxy complet)
 		if (backendUrl && backendUrl !== 'BACKEND_URL') {
 			// WebSocket upgrade
 			if (request.headers.get('Upgrade') === 'websocket') {
 				return handleWebSocket(request, backendUrl);
 			}
-			
-			// Routes backend spécifiques (API, extensions, etc.)
-			if (pathname.startsWith('/api/') ||
-				pathname.startsWith('/vscode-remote-resource') ||
-				pathname.startsWith('/callback') ||
-				pathname.startsWith('/static') ||
-				pathname.startsWith('/extension') ||
-				pathname.startsWith('/_') ||
-				pathname.includes('.json') && !pathname.startsWith('/out/') && !pathname.startsWith('/extensions/')) {
-				return proxyToBackend(request, backendUrl, pathname);
-			}
+
+			// Proxy TOUTES les requêtes vers le backend Render
+			// Le backend Render sert déjà le workbench HTML et tous les fichiers statiques
+			return proxyToBackend(request, backendUrl, pathname);
 		}
 
-		// Routes statiques → servir depuis KV ou proxy vers backend
-		if (isStaticPath(pathname) || pathname === '/' || pathname === '/index.html') {
-			// Essayer de charger depuis KV Storage (si configuré)
-			if (env.STATIC_ASSETS) {
-				const key = pathname === '/' ? '/index.html' : pathname;
-				const asset = await env.STATIC_ASSETS.get(key);
-				if (asset) {
-					return new Response(asset, {
-						headers: {
-							'Content-Type': getMimeType(key),
-							'Cache-Control': 'public, max-age=31536000',
-							'Access-Control-Allow-Origin': '*',
-						},
-					});
-				}
-			}
-
-			// Si pas dans KV et backend disponible, proxy vers backend pour les fichiers statiques
-			if (backendUrl && backendUrl !== 'BACKEND_URL') {
-				return proxyToBackend(request, backendUrl, pathname);
-			}
-
-			// Fallback: servir depuis le workbench HTML généré
-			if (pathname === '/' || pathname === '/index.html') {
-				return new Response(getWorkbenchHTML(url.origin), {
+		// Si pas de backend configuré, essayer de servir depuis KV
+		if (env.STATIC_ASSETS) {
+			const key = pathname === '/' ? '/index.html' : pathname;
+			const asset = await env.STATIC_ASSETS.get(key);
+			if (asset) {
+				return new Response(asset, {
 					headers: {
-						'Content-Type': 'text/html',
-						'Cache-Control': 'public, max-age=3600',
+						'Content-Type': getMimeType(key),
+						'Cache-Control': 'public, max-age=31536000',
 						'Access-Control-Allow-Origin': '*',
 					},
 				});
 			}
+		}
 
-			// Autres fichiers statiques - proxy vers backend si disponible
-			if (backendUrl && backendUrl !== 'BACKEND_URL') {
-				return proxyToBackend(request, backendUrl, pathname);
-			}
-
-			// Dernier recours: 404
-			return new Response('File not found', {
-				status: 404,
+		// Dernier recours: fallback HTML (ne devrait jamais arriver si backend est configuré)
+		if (pathname === '/' || pathname === '/index.html') {
+			return new Response(getWorkbenchHTML(url.origin), {
 				headers: {
-					'Content-Type': 'text/plain',
+					'Content-Type': 'text/html',
+					'Cache-Control': 'public, max-age=3600',
 					'Access-Control-Allow-Origin': '*',
 				},
 			});
 		}
 
-		// Route par défaut: proxy vers backend si disponible, sinon servir le workbench
-		if (backendUrl && backendUrl !== 'BACKEND_URL') {
-			return proxyToBackend(request, backendUrl, pathname);
-		}
-
-		// Fallback: servir le workbench HTML généré
-		return new Response(getWorkbenchHTML(url.origin), {
+		// 404 si rien ne correspond
+		return new Response('Backend not configured or file not found', {
+			status: 404,
 			headers: {
-				'Content-Type': 'text/html',
-				'Cache-Control': 'public, max-age=3600',
+				'Content-Type': 'text/plain',
 				'Access-Control-Allow-Origin': '*',
 			},
 		});
