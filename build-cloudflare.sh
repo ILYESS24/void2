@@ -2,6 +2,7 @@
 set -e
 
 echo "🚀 Build pour Cloudflare Pages/Workers..."
+echo "⚠️  Si le build échoue localement, connectez GitHub à Cloudflare Pages pour builder sur leurs serveurs"
 
 # Vérifier que nous sommes dans le bon répertoire
 if [ ! -f "package.json" ]; then

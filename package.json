@@ -62,6 +62,8 @@
     "deploy:worker:simple": "node deploy-worker-simple.js",
     "deploy:pages": "npm run build:cloudflare && wrangler pages deploy dist",
     "deploy:pages:auto": "wrangler pages deploy dist --project-name=void-code",
+    "deploy:complete": "bash deploy-complete.sh",
+    "deploy:complete:win": "deploy-complete.bat",
     "deploy:cloudflare-auto": "bash deploy-cloudflare-auto.sh",
     "deploy:cloudflare-auto:win": "deploy-cloudflare-auto.bat",
     "upload:kv": "node upload-assets-to-kv.js",
