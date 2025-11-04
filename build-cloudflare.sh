@@ -10,9 +10,13 @@ if [ ! -f "package.json" ]; then
     exit 1
 fi
 
-# Installer les dépendances
-echo "📦 Installation des dépendances..."
-npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+# Installer les dépendances (seulement si pas déjà installées)
+if [ ! -d "node_modules" ] || [ -z "$(ls -A node_modules)" ]; then
+    echo "📦 Installation des dépendances..."
+    npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+else
+    echo "✅ Dépendances déjà installées, passage au build..."
+fi
 
 # Compiler le code source principal
 echo "🔨 Compilation du code source principal..."

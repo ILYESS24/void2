@@ -21,13 +21,18 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libxkbfile-dev build-essential python3
+
       - name: Install dependencies
         run: |
           # Supprimer temporairement .npmrc pour éviter les conflits avec node-gyp
           # (target="34.3.2" est pour Electron, pas pour Node.js)
           mv .npmrc .npmrc.backup || true
-          # Installer sans scripts natifs (deviceid n'est pas nécessaire pour web)
-          npm ci --legacy-peer-deps --ignore-scripts || npm install --legacy-peer-deps --ignore-scripts
+          # Installer avec scripts natifs (nécessaires pour certains modules)
+          npm ci --legacy-peer-deps || npm install --legacy-peer-deps
           # Restaurer .npmrc après installation
           mv .npmrc.backup .npmrc || true
 
