@@ -1,6 +1,6 @@
 /**
  * Cloudflare Worker pour Void Code
- * 
+ *
  * Ce worker sert les fichiers statiques de VS Code Web.
  * Note: Le backend (server.js) doit être hébergé séparément car
  * Cloudflare Workers ne peut pas exécuter un serveur Node.js complet.
@@ -79,18 +79,44 @@ async function handleWebSocket(request, backendUrl) {
  * Proxy les requêtes API vers le backend
  */
 async function proxyToBackend(request, backendUrl, pathname) {
-	const backendUrlObj = new URL(backendUrl);
-	const targetUrl = new URL(pathname, backendUrl);
-	
-	// Copier les headers
-	const headers = new Headers(request.headers);
-	headers.set('Host', backendUrlObj.host);
-	
-	return fetch(targetUrl.toString(), {
-		method: request.method,
-		headers: headers,
-		body: request.method !== 'GET' && request.method !== 'HEAD' ? request.body : null,
-	});
+	try {
+		const backendUrlObj = new URL(backendUrl);
+		const targetUrl = new URL(pathname, backendUrl);
+
+		// Copier les headers
+		const headers = new Headers(request.headers);
+		headers.set('Host', backendUrlObj.host);
+		// Ajouter CORS headers pour le proxy
+		headers.set('Origin', backendUrlObj.origin);
+
+		const response = await fetch(targetUrl.toString(), {
+			method: request.method,
+			headers: headers,
+			body: request.method !== 'GET' && request.method !== 'HEAD' ? request.body : null,
+		});
+
+		// Créer une nouvelle réponse avec CORS headers
+		const newResponse = new Response(response.body, {
+			status: response.status,
+			statusText: response.statusText,
+			headers: response.headers,
+		});
+
+		// Ajouter CORS headers
+		newResponse.headers.set('Access-Control-Allow-Origin', '*');
+		newResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+		newResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+		return newResponse;
+	} catch (error) {
+		return new Response(`Proxy error: ${error.message}`, {
+			status: 502,
+			headers: {
+				'Content-Type': 'text/plain',
+				'Access-Control-Allow-Origin': '*',
+			},
+		});
+	}
 }
 
 /**
@@ -101,11 +127,23 @@ export default {
 		const url = new URL(request.url);
 		const pathname = url.pathname;
 
+		// Gérer les requêtes OPTIONS (CORS preflight)
+		if (request.method === 'OPTIONS') {
+			return new Response(null, {
+				headers: {
+					'Access-Control-Allow-Origin': '*',
+					'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+					'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+					'Access-Control-Max-Age': '86400',
+				},
+			});
+		}
+
 		// Routes API et WebSocket → proxy vers le backend
-		if (pathname.startsWith('/api/') || 
-		    pathname.startsWith('/vscode-remote-resource') ||
-		    pathname.startsWith('/callback') ||
-		    request.headers.get('Upgrade') === 'websocket') {
+		if (pathname.startsWith('/api/') ||
+			pathname.startsWith('/vscode-remote-resource') ||
+			pathname.startsWith('/callback') ||
+			request.headers.get('Upgrade') === 'websocket') {
 			const backendUrl = env.BACKEND_URL || BACKEND_URL;
 			if (backendUrl && backendUrl !== 'BACKEND_URL') {
 				if (request.headers.get('Upgrade') === 'websocket') {
@@ -138,12 +176,19 @@ export default {
 					headers: {
 						'Content-Type': 'text/html',
 						'Cache-Control': 'public, max-age=3600',
+						'Access-Control-Allow-Origin': '*',
 					},
 				});
 			}
 
 			// Autres fichiers statiques - retourner 404 si pas dans KV
-			return new Response('File not found', { status: 404 });
+			return new Response('File not found', {
+				status: 404,
+				headers: {
+					'Content-Type': 'text/plain',
+					'Access-Control-Allow-Origin': '*',
+				},
+			});
 		}
 
 		// Route par défaut: servir le workbench
@@ -151,6 +196,7 @@ export default {
 			headers: {
 				'Content-Type': 'text/html',
 				'Cache-Control': 'public, max-age=3600',
+				'Access-Control-Allow-Origin': '*',
 			},
 		});
 	},
@@ -161,7 +207,7 @@ export default {
  */
 function getWorkbenchHTML(origin) {
 	const baseUrl = origin;
-	
+
 	return `<!DOCTYPE html>
 <html>
 <head>
@@ -169,12 +215,12 @@ function getWorkbenchHTML(origin) {
 	<meta name="mobile-web-app-capable" content="yes" />
 	<meta name="apple-mobile-web-app-capable" content="yes" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-	
+
 	<meta id="vscode-workbench-web-configuration" data-settings='{"remoteAuthority":"${origin}","webviewResourceRoot":"${baseUrl}","webviewCspSource":"${origin}","_wrapWebviewExtHostInIframe":true}'>
-	
+
 	<link rel="icon" href="${baseUrl}/resources/server/favicon.ico" type="image/x-icon" />
 	<link rel="stylesheet" href="${baseUrl}/out/vs/code/browser/workbench/workbench.css">
-	
+
 	<script>
 		const baseUrl = new URL('${baseUrl}', window.location.origin).toString();
 		globalThis._VSCODE_FILE_ROOT = baseUrl + '/out/';
