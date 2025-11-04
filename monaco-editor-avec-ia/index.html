@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monaco Editor avec IA - Copilot Intégré</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .toolbar {
+            background: #1e1e1e;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #333;
+        }
+        .toolbar button {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .toolbar button:hover {
+            background: #1177bb;
+        }
+        .toolbar input {
+            flex: 1;
+            background: #252526;
+            border: 1px solid #3e3e42;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        #container {
+            flex: 1;
+            width: 100%;
+            height: calc(100vh - 100px);
+        }
+        .status-bar {
+            height: 22px;
+            background: #007acc;
+            color: white;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            font-size: 12px;
+        }
+        .ai-panel {
+            position: fixed;
+            bottom: 22px;
+            right: 0;
+            width: 400px;
+            height: 300px;
+            background: #252526;
+            border-left: 1px solid #3e3e42;
+            display: none;
+            flex-direction: column;
+        }
+        .ai-panel.active {
+            display: flex;
+        }
+        .ai-panel-header {
+            padding: 8px;
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .ai-panel-header h3 {
+            color: white;
+            font-size: 12px;
+            font-weight: normal;
+        }
+        .ai-panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            color: #cccccc;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .ai-panel-input {
+            padding: 8px;
+            border-top: 1px solid #3e3e42;
+            display: flex;
+            gap: 8px;
+        }
+        .ai-panel-input input {
+            flex: 1;
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            color: white;
+            padding: 6px;
+            border-radius: 3px;
+        }
+        .ai-panel-input button {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <button onclick="toggleAI()">🤖 IA Assistant</button>
+        <button onclick="suggestCode()">💡 Suggérer du code</button>
+        <input type="text" id="aiPrompt" placeholder="Demander à l'IA (ex: créer une fonction pour trier un tableau)">
+    </div>
+    
+    <div id="container"></div>
+    
+    <div class="ai-panel" id="aiPanel">
+        <div class="ai-panel-header">
+            <h3>🤖 Assistant IA</h3>
+            <button onclick="toggleAI()" style="background: transparent; padding: 4px;">✕</button>
+        </div>
+        <div class="ai-panel-content" id="aiContent">
+            <p>Bonjour ! Je suis votre assistant IA. Comment puis-je vous aider ?</p>
+            <p style="margin-top: 12px; color: #888;">💡 Essayez :</p>
+            <ul style="margin-left: 20px; margin-top: 8px;">
+                <li>"Créer une fonction pour calculer la factorielle"</li>
+                <li>"Expliquer ce code"</li>
+                <li>"Optimiser cette fonction"</li>
+                <li>"Ajouter des commentaires"</li>
+            </ul>
+        </div>
+        <div class="ai-panel-input">
+            <input type="text" id="aiInput" placeholder="Posez votre question..." onkeypress="if(event.key==='Enter') askAI()">
+            <button onclick="askAI()">Envoyer</button>
+        </div>
+    </div>
+    
+    <div class="status-bar">
+        Monaco Editor avec IA - Prêt | Appuyez sur Ctrl+I pour l'IA
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@latest/min/vs/loader.js"></script>
+    <script>
+        let editor;
+        let aiPanelActive = false;
+        
+        require.config({ 
+            paths: { 
+                vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@latest/min/vs' 
+            } 
+        });
+        
+        require(['vs/editor/editor.main'], function () {
+            monaco.editor.setTheme('vs-dark');
+            
+            editor = monaco.editor.create(document.getElementById('container'), {
+                value: `// Bienvenue dans Monaco Editor avec IA !
+// Appuyez sur Ctrl+I ou cliquez sur "IA Assistant" pour activer l'IA
+
+function example() {
+    // L'IA peut vous aider à :
+    // - Générer du code
+    // - Expliquer le code
+    // - Optimiser le code
+    // - Ajouter des commentaires
+    console.log('Bonjour !');
+}
+
+example();`,
+                language: 'javascript',
+                automaticLayout: true,
+                fontSize: 14,
+                minimap: { enabled: true },
+                scrollBeyondLastLine: false
+            });
+            
+            // Raccourci clavier pour l'IA
+            editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyI, function() {
+                toggleAI();
+            });
+            
+            // Mettre à jour la barre de statut
+            editor.onDidChangeCursorPosition(function(e) {
+                const line = e.position.lineNumber;
+                const column = e.position.column;
+                const status = document.querySelector('.status-bar');
+                status.textContent = `Ligne ${line}, Colonne ${column} - Monaco Editor avec IA`;
+            });
+        });
+        
+        function toggleAI() {
+            aiPanelActive = !aiPanelActive;
+            document.getElementById('aiPanel').classList.toggle('active', aiPanelActive);
+            if (aiPanelActive) {
+                document.getElementById('aiInput').focus();
+            }
+        }
+        
+        function askAI() {
+            const prompt = document.getElementById('aiInput').value;
+            const aiContent = document.getElementById('aiContent');
+            
+            if (!prompt.trim()) return;
+            
+            // Afficher la question
+            aiContent.innerHTML += `<p style="color: #4ec9b0;"><strong>Vous:</strong> ${prompt}</p>`;
+            
+            // Simulation de réponse IA (à remplacer par une vraie API)
+            setTimeout(() => {
+                const response = generateAIResponse(prompt, editor.getValue());
+                aiContent.innerHTML += `<p style="color: #cccccc; margin-top: 8px;"><strong>IA:</strong> ${response}</p>`;
+                aiContent.scrollTop = aiContent.scrollHeight;
+                document.getElementById('aiInput').value = '';
+            }, 500);
+        }
+        
+        function generateAIResponse(prompt, code) {
+            // Simulation basique - À REMPLACER par une vraie API IA
+            const lowerPrompt = prompt.toLowerCase();
+            
+            if (lowerPrompt.includes('créer') || lowerPrompt.includes('générer')) {
+                return `Voici une suggestion de code basée sur votre demande. Je peux vous aider à générer du code personnalisé avec une vraie API IA.`;
+            } else if (lowerPrompt.includes('expliquer') || lowerPrompt.includes('explique')) {
+                return `Je peux expliquer le code que vous avez sélectionné. Sélectionnez du code dans l'éditeur et demandez-moi de l'expliquer.`;
+            } else if (lowerPrompt.includes('optimiser') || lowerPrompt.includes('améliorer')) {
+                return `Je peux vous aider à optimiser votre code. Montrez-moi le code à optimiser.`;
+            } else {
+                return `Je comprends votre demande. Pour une vraie assistance IA, intégrez une API comme OpenAI, Anthropic Claude, ou GitHub Copilot. Je peux vous aider à configurer cela !`;
+            }
+        }
+        
+        function suggestCode() {
+            const selectedCode = editor.getModel().getValueInRange(editor.getSelection());
+            if (selectedCode) {
+                document.getElementById('aiInput').value = `Suggérer du code pour: ${selectedCode.substring(0, 50)}...`;
+                toggleAI();
+            } else {
+                document.getElementById('aiInput').value = 'Suggérer du code pour cette fonction';
+                toggleAI();
+            }
+        }
+        
+        // Écouter Enter dans le prompt principal
+        document.getElementById('aiPrompt').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('aiInput').value = this.value;
+                toggleAI();
+                askAI();
+            }
+        });
+    </script>
+</body>
+</html>
+
